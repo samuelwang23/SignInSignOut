@@ -25,21 +25,21 @@ class MyKeyboard(Tk):
         self.args = args
         self.buttons = []
         self.upper = False
-        self.keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-                'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o','p', 
+        self.keys = [['1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+                    'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o','p', 
                     'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'Backspace', 
-                    'Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Cancel','Enter', 'Space']
-        self.shifted_keys = ['~', '!', '@', '#', '&', '*', '(', ')', '_', '+', 
-                            'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 
-                            'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', "Backspace", 
-                            'Lowercase', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Cancel', 'Enter', 'Space']
+                    'Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Cancel','Enter', 'Space'],
+                    ['~', '!', '@', '#', '&', '*', '(', ')', '_', '+', 
+                    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 
+                    'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', "Backspace", 
+                    'Lowercase', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Cancel', 'Enter', 'Space']]
         
         self.createKeyboardGUI()
 
     def createKeyboardGUI(self):
         self.keyboard.config(bg='whitesmoke')
         self.keyboard.resizable(0, 0)
-        titleLabel = Label(self.keyboard, text= self.text, font=('arial', 24, 'bold'), bg='whitesmoke', fg='gray30')
+        titleLabel = Label(self.keyboard, text=self.text, font=('arial', 24, 'bold'), bg='whitesmoke', fg='gray30')
         titleLabel.grid(row=0, columnspan=15)
         self.textarea = " "
         self.textarea = Text(self.keyboard, font=('arial', 28, 'bold'), height= 1, width= 60, wrap='word',bd=8, relief=SUNKEN)
@@ -48,7 +48,7 @@ class MyKeyboard(Tk):
         self.createKeyboardButtons()
 
     def createKeyboardButtons(self):
-        for i, button in enumerate(self.keys):
+        for i, button in enumerate(self.keys[0]):
             command = lambda x = button: self.key_pressed(x)
             varColumn = i % 10
             varRow = int(i / 10) + 2
@@ -62,21 +62,14 @@ class MyKeyboard(Tk):
                 key.grid(row=6, column=0, columnspan=14)
                 self.buttons.append(key)
     
-    def make_keys_uppercase(self):
-        self.upper = True
+    def shiftKeys(self):
+        self.upper = not self.upper
+        keys_index = self.upper if 1 else 0
         for i, button in enumerate(self.buttons):
-            button["text"] = self.shifted_keys[i]
+            button["text"] = self.keys[keys_index][i]
             command = lambda x = button["text"]: self.key_pressed(x)
             button.configure(command=command)
-            button.value = self.shifted_keys[i]
-
-    def make_keys_lowercase(self):
-        self.upper = False
-        for i, button in enumerate(self.buttons):
-            button["text"] = self.keys[i]
-            command = lambda x = button["text"]: self.key_pressed(x)
-            button.configure(command=command)
-            button.value = self.keys[i]
+            button.value = self.keys[keys_index][i]
 
     def key_pressed(self, value):       
         if value == 'Space':
@@ -102,15 +95,15 @@ class MyKeyboard(Tk):
             self.textarea.delete(1.0, END)
             self.textarea.insert(INSERT, new_text)
 
-        elif value == 'Shift':
-            self.make_keys_uppercase()
-
-        elif value == 'Lowercase':         
-            self.make_keys_lowercase()
+        elif value == 'Shift' or value == 'Lowercase':
+            self.shiftKeys()
         else:
             self.textarea.insert(INSERT, value)
             # Return keys to lowercase if they are currently uppercase
             if self.upper:
-                self.make_keys_lowercase()
+                self.shiftKeys()
 
         self.textarea.focus_set()
+
+keyboard = MyKeyboard("test of title", "test", None, None)
+keyboard.keyboard.mainloop()
