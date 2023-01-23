@@ -1,4 +1,4 @@
-# TODO Clean up Imports
+# Later TODO Clean up Imports
 
 from tkinter import ttk
 
@@ -11,9 +11,9 @@ import glob
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import time
-from datetime import datetime
+
 from pytz import timezone
-from keyboard import MyKeyboard
+from keyboard import Keyboard
 import pygame
 
 
@@ -23,21 +23,32 @@ from utils import *
 
 tz = timezone('EST')
 
-# # TODO Make this into a model class that handles the Google SpreadSheet side of things
-# gc = gspread.service_account(filename='myCredentials.json')
+# Later TODO Make this into a model class that handles the Google SpreadSheet side of things
+gc = gspread.service_account(filename='myCredentials.json')
 
 
-# IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
-# students = IDList.worksheet("Student")
-# student_users = pd.DataFrame(students.get_all_records()) 
-# student_users["Type"] = "Student"
-# student_ids = student_users["Person ID"].values
+IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
+students = IDList.worksheet("Student")
+student_users = pd.DataFrame(students.get_all_records()) 
+student_users["Type"] = "Student"
+student_ids = student_users["Person ID"].values
 
-# faculty = IDList.worksheet("Faculty")
-# faculty_users = pd.DataFrame(faculty.get_all_records()) 
-# faculty_users["Type"] = "Faculty"
-# faculty_ids = faculty_users["Person ID"].values
+faculty = IDList.worksheet("Faculty")
+faculty_users = pd.DataFrame(faculty.get_all_records()) 
+faculty_users["Type"] = "Faculty"
+faculty_ids = faculty_users["Person ID"].values
 
+records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
+lateness = records.worksheet("Lateness")
+lateness_entry = pd.DataFrame(lateness.get_all_records())
+off_campus = records.worksheet("Off Campus")
+off_campus_entry = pd.DataFrame(off_campus.get_all_records())
+fac_off_campus = records.worksheet("Faculty Off Campus")
+fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
+
+# pygame.mixer.init()
+
+# TODO make update Records happen more effectively 
 # records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
 # lateness = records.worksheet("Lateness")
 # lateness_entry = pd.DataFrame(lateness.get_all_records())
@@ -45,9 +56,7 @@ tz = timezone('EST')
 # off_campus_entry = pd.DataFrame(off_campus.get_all_records())
 # fac_off_campus = records.worksheet("Faculty Off Campus")
 # fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
-
-# pygame.mixer.init()
-
+# # print(fac_off_campus_entry)
 
 
 def LogSignIn(reason, args):
@@ -62,9 +71,13 @@ class Reason(Tk):
 
         title = 'Enter your reason for lateness'
         text = 'Please enter your reason for lateness'
-        args = {"user": user}
-        keybd = MyKeyboard(title, text, LogSignIn, args)
-        keybd.ky()
+        wait = Tk()
+        keybd = Keyboard(wait, title, text)
+        # TODO Add to GSpread Queue
+        wait.iconify()
+        wait.wait_window(keybd.keyboard)
+        print(keybd.entry)
+        wait.destroy()
         
 
 #TODO Refactor this class completely
@@ -75,7 +88,6 @@ class BarcodeWindow(Tk):
         title = purpose
         self.title(title)
         self.purpose = purpose
-       #print("Purpose is: ", self.purpose)
         # self.geometry('1200x130')
         self.geometry(f'+300+500')
 
@@ -99,32 +111,23 @@ class BarcodeWindow(Tk):
 
         elif event.keysym == 'Return':
             
-            try:
-                scan_id = int(self.code[-6:])
+            # try:
+                # scan_id = int(self.code[-6:])
                 # Desktop Test - not using barcode
-
                 # scan_id = 213660
-                # scan_id = 196097
-                # scan_id = 69
+                scan_id = 196097
                 print("Scanned in:", scan_id)
                 self.withdraw()
 
-                # Update Records
-                records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
-                lateness = records.worksheet("Lateness")
-                lateness_entry = pd.DataFrame(lateness.get_all_records())
-                off_campus = records.worksheet("Off Campus")
-                off_campus_entry = pd.DataFrame(off_campus.get_all_records())
-                fac_off_campus = records.worksheet("Faculty Off Campus")
-                fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
-                print(fac_off_campus_entry)
+                
+
+                
                 if scan_id in student_ids:
                     error_pop("This beta is currently faculty-only, but is coming soon for students!", False)
                     user = student_users[student_users['Person ID'] == int(scan_id)].iloc[0]
                     print("Student User")
                 elif scan_id in faculty_ids:
                     user = faculty_users[faculty_users['Person ID'] == int(scan_id)].iloc[0]
-                    print(user)
                     print("Faculty User")
                 else:
                     raise Exception("User Not Found Error")
@@ -141,7 +144,7 @@ class BarcodeWindow(Tk):
                 elif user["Type"] == "Faculty":
                     # Check if there is an outstanding record
                     date, clock = get_date_and_clock()
-                    print(fac_off_campus_entry.columns)
+                    # print(fac_off_campus_entry.columns)
                     all_outstanding_records = fac_off_campus_entry[(fac_off_campus_entry["Time Back"] == "") & (fac_off_campus_entry["Date"] == date)]
                     IDs = pd.DataFrame([])
                     if len(all_outstanding_records) > 0:
@@ -168,7 +171,7 @@ class BarcodeWindow(Tk):
                     else:
                         # args = {"user": user, "transport": "Walk"}
                         # LogSignOut("home", args) 
-                        CustomLocation(user, "", "Drive")
+                        CustomLocation(user, None, "Drive")
                         
                     # if scan_id in fac_off_campus[fac_off_campus["Time Back"] == ""]["ID"].values:
                     #     if 
@@ -177,19 +180,15 @@ class BarcodeWindow(Tk):
                     #self.code = ""
                     #self.deiconify()
 
-            except Exception as e:
-                print(e)
-                error_pop("Invalid ID: Please try rescanning your ID")
-                print("Invalid ID")
+            # except Exception as e:
+                # print(e)
+                # error_pop("Invalid ID: Please try rescanning your ID")
+                # print("Invalid ID")
 
     
-# TODO Make this part of a Model class
-def OffCampusReturn(row_index, clock, window):
-    fac_off_campus.update_cell(row_index, 6, clock)
-    fac_off_campus.update_cell(row_index, 7, "Present")
-    window.destroy()
+
     
-# TODO later: Make this accept a custom list of locations
+# TODO Later: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
         window = Tk()
@@ -248,11 +247,18 @@ class CustomLocation(Tk):
     def __init__(self, user, window, transport):
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
-        args = {"user": user, "transport": transport, "window": window}
-        keybd = MyKeyboard(title, text, LogSignOut, args)
-        keybd.ky()
+        wait = Tk()
+        keybd = Keyboard(wait, title, text)
+        # TODO Add to GSpread Queue
+        wait.iconify()
+        wait.wait_window(keybd.keyboard)
+        print(keybd.entry)
+        wait.destroy()
+        
+        
+        
 
-# TODO: Understand differences between Functions "LogSignOut" and "FacultyLogSignOut" 
+# TODO: Later Reconcile differences between Functions "LogSignOut" and "FacultyLogSignOut" 
 def LogSignOut(location, args):
     user = args["user"]
     date, clock = get_date_and_clock()
@@ -292,7 +298,7 @@ def FacultySignOut(location, args, gone_for_day, window) :
     success_confirm(confirm_msg, len(fac_off_campus.get_all_values()))
 
 
-# TODO Make this and Error Pop classes that inherit from each other, super().init
+# TODO Later Make this and Error Pop classes that inherit from each other, super().init
 def success_confirm(confirm_text, row_id):
     confirmation = Toplevel()
     confirmation.geometry("500x400+700+300")
@@ -342,21 +348,17 @@ def SignOut():
     op = BarcodeWindow("Sign Out")
 
 #Admin functions exit program
-#TODO add a setting in MyKeyboard for "Password mode"
+#TODO Later add a setting in Keyboard for "Password mode"
 def Admin(root):
-    keybd = MyKeyboard("Please Enter the Password", "Password", CloseMain, root)
-    keybd.ky()
+    keybd = Keyboard(root, "Please Enter the Password", "Password")
 
-#TODO Remove this password from the code itself somehow
-def CloseMain(password, root):
-    if password == "patriot":
+    #TODO Later Remove this password from the code itself somehow
+    root.wait_window(keybd.keyboard)
+    if keybd.entry == "patriot":
         root.quit()
     else:
-        error_pop("Incorrect Password")
+        error_pop("Incorrect Password")    
         
-
-
-
 
 
 
@@ -387,7 +389,7 @@ def main():
     # Create buttons
     buttonFrame(root, text="Lateness", command=SignIn, font_size=36, relx=0.2, rely=0.86, relwidth=0.25, relheight=0.09)
     buttonFrame(root, text="Off Campus", command=SignOut, font_size=36, relx=0.52, rely=0.86, relwidth=0.25, relheight=0.09)
-    buttonFrame(root, text="Admin", command=Admin(root), font_size=36, relx=0.85, rely=0.86, relwidth=0.15, relheight=0.09)    
+    buttonFrame(root, text="Admin", command=lambda:Admin(root), font_size=36, relx=0.85, rely=0.86, relwidth=0.15, relheight=0.09)    
 
     root.mainloop()
 

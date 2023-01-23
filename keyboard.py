@@ -1,28 +1,17 @@
 #Import the tkinter library
 from tkinter import *
 from tkinter import ttk
-from PIL import ImageTk, Image
-import os
-import time
-import pandas as pd
-from tkinter.messagebox import askyesno
-import random
-import glob
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import time
-from datetime import datetime
-from pytz import timezone
 
-class MyKeyboard(Tk):
+class Keyboard(Tk):
 
-    def __init__(self, title, text, fn, args):
-        self.keyboard = Tk()
+    def __init__(self, primary, title, text):
+        if primary:
+            self.keyboard = Toplevel(primary)
+        else:
+            self.keyboard = Tk()
         self.keyboard.title(title)
         self.text = text
         self.entry = ""
-        self.fn = fn
-        self.args = args
         self.buttons = []
         self.upper = False
         self.keys = [['1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
@@ -75,12 +64,10 @@ class MyKeyboard(Tk):
         if value == 'Space':
             self.textarea.insert(INSERT, ' ')
 
-        # TODO Don't have keyboard handle any function calling
         elif value == 'Enter':
             i = self.textarea.get(1.0, END)
             self.entry = i[:-1]
             self.keyboard.destroy()
-            self.fn(self.entry, self.args)
             return
 
         elif value == 'Cancel':
@@ -104,6 +91,3 @@ class MyKeyboard(Tk):
                 self.shiftKeys()
 
         self.textarea.focus_set()
-
-keyboard = MyKeyboard("test of title", "test", None, None)
-keyboard.keyboard.mainloop()

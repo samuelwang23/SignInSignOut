@@ -1,11 +1,10 @@
 from tkinter import *
 from PIL import ImageTk, Image
-
-
+from datetime import datetime
 
 def get_date_and_clock():
-    date = datetime.now(tz).strftime('%Y-%m-%d')
-    clock = datetime.now(tz).strftime('%H:%M:%S')
+    date = datetime.now().strftime('%Y-%m-%d')
+    clock = datetime.now().strftime('%H:%M:%S')
     return date, clock
 
 
