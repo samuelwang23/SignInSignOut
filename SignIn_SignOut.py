@@ -46,6 +46,8 @@ off_campus_entry = pd.DataFrame(off_campus.get_all_records())
 fac_off_campus = records.worksheet("Faculty Off Campus")
 fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
 
+
+
 # pygame.mixer.init()
 
 # TODO make update Records happen more effectively 
@@ -79,22 +81,17 @@ class Reason(Tk):
         print(keybd.entry)
         wait.destroy()
         
-
-
-    
-
-    
 # TODO Later: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
-        window = Tk()
+        window = Toplevel()
         self.user = user
-        window.geometry('800x600+300+300')
+        window.geometry('755x630+300+300')
         window.resizable(False, False)
         window.title('Location')
         name = user['Preferred Name'] + " " + user['Last Name']
-        label = Label(window, text=f"Please select a location, {name}", font=('Helvetica 24 bold'))
-        label.pack(pady= 10, padx =3)
+        label = Label(window, text=f"Please select a location, {name}", font=('Helvetica 24 bold'),  justify=CENTER)
+        label.grid(row = 0, column = 0, columnspan = 6, pady= 10, padx =3)
 
 
         self.selected_place = StringVar(window, value='Others')
@@ -103,49 +100,19 @@ class LocationChoiceWindow(Tk):
                     ('Little Italy', 'Little Italy'),
                     ('Wawa', 'Wawa'),
                     ('Zakes Cafe', 'Zakes Cafe'),
-                    ('Walking Off Campus', 'Walking'),
+                    ('Walking Somewhere else', 'Walking'),
                     ('Driving Off Campus', 'Driving'))
-
 
         # buttons
         for i, place in enumerate(locations):
-            # r = Radiobutton(
-            #     window, font=('Arial 24'),
-            #     text=place[0],
-            #     value=place[1],
-            #     variable=self.selected_place,
-            #     tristatevalue=0
-            # )
-            print(i)
             if place[1] != "Walking" and place[1] != "Driving":
-                r = Button(window, text=place[0], font=('Arial 24'), command=lambda:LogSignOut(place[1], args = {"user": self.user, "window": window, "transport": "Walk"}))
-
-                r.pack(anchor = W, padx=5, pady=5)
+                photo = PhotoImage(file = f"logos/{place[1]}.png")
+                r = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda:LogSignOut(place[1], self.user, "Walk", window))
+                r.image = photo
+                r.grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
                 r = Button(window, text=place[0], font=('Arial 24'), command=lambda:CustomLocation(self.user, window, place[1]))
-                r.pack(anchor = W, padx=5, pady=5)
-            #r.deselect()
-
-        # button
-        button = Button(
-            window,
-            text="Get Selected Place",font=('Arial 24'),
-            command=lambda:self.show_selected_place(window))
-
-        button.pack(pady= 10)#fill='x', padx=5, pady=5)
-    def show_selected_place(self, window):
-        place = self.selected_place.get()
-        if place == "Driving":
-            print("Check to see if there is permission to drive")
-            loc = CustomLocation(self.user, window, "Drive")
-        elif place == "Walking":
-            print("Custom Walking")
-            loc = CustomLocation(self.user, window, "Walk")
-            
-        else:
-            #TODO Make LogSignOut not take args and use normal function arguments instead
-            args = {"user": self.user, "window": window, "transport": "Walk"}
-            LogSignOut(place, args)
+                r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
 
 class CustomLocation(Tk):
     def __init__(self, user, window, transport):
@@ -163,15 +130,12 @@ class CustomLocation(Tk):
         
 
 # TODO: Later Reconcile differences between Functions "LogSignOut" and "FacultyLogSignOut" 
-def LogSignOut(location, args):
-    user = args["user"]
+def LogSignOut(location, user, transport, window):
     date, clock = get_date_and_clock()
     if user["Type"] == "Student":
-        transport = args["transport"]
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, "Absent"]
         off_campus.append_row(student_data)
         #Close Window
-        window = args["window"]
         window.destroy()
     else:
         gone_for_day_check = Tk()
@@ -303,7 +267,8 @@ class OperationSelector(Tk):
         textFrame(self.screen, text="Select an Operation", font_size=22, color = "black", relx=0.5, rely=0.2, relwidth=0.88, relheight=0.2)
         buttonFrame(self.screen, text="Lateness", command=lambda:Lateness(self.user), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
         buttonFrame(self.screen, text="Off Campus", command=lambda:LocationChoiceWindow(self.user), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
-        
+    
+
 def Lateness(user):
     root = Tk()
     keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
