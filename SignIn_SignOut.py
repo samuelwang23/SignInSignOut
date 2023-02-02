@@ -89,7 +89,7 @@ class LocationChoiceWindow(Tk):
     def __init__(self, user):
         window = Tk()
         self.user = user
-        window.geometry('800x560+300+300')
+        window.geometry('800x600+300+300')
         window.resizable(False, False)
         window.title('Location')
         name = user['Preferred Name'] + " " + user['Last Name']
@@ -108,15 +108,22 @@ class LocationChoiceWindow(Tk):
 
 
         # buttons
-        for place in locations:
-            r = Radiobutton(
-                window, font=('Arial 24'),
-                text=place[0],
-                value=place[1],
-                variable=self.selected_place,
-                tristatevalue=0
-            )
-            r.pack(anchor = W, padx=5, pady=5)
+        for i, place in enumerate(locations):
+            # r = Radiobutton(
+            #     window, font=('Arial 24'),
+            #     text=place[0],
+            #     value=place[1],
+            #     variable=self.selected_place,
+            #     tristatevalue=0
+            # )
+            print(i)
+            if place[1] != "Walking" and place[1] != "Driving":
+                r = Button(window, text=place[0], font=('Arial 24'), command=lambda:LogSignOut(place[1], args = {"user": self.user, "window": window, "transport": "Walk"}))
+
+                r.pack(anchor = W, padx=5, pady=5)
+            else:
+                r = Button(window, text=place[0], font=('Arial 24'), command=lambda:CustomLocation(self.user, window, place[1]))
+                r.pack(anchor = W, padx=5, pady=5)
             #r.deselect()
 
         # button
@@ -136,6 +143,7 @@ class LocationChoiceWindow(Tk):
             loc = CustomLocation(self.user, window, "Walk")
             
         else:
+            #TODO Make LogSignOut not take args and use normal function arguments instead
             args = {"user": self.user, "window": window, "transport": "Walk"}
             LogSignOut(place, args)
 
@@ -233,16 +241,6 @@ def error_pop(error_text, audio=True, length=3000):
         pygame.mixer.music.play()
     
 
-
-#Define SignIn funcation
-def SignIn():
-    error_pop("Lateness Sign In is only for students", False, 1000)
-#    op = BarcodeWindow("Sign In") 
-
-#Define SignOut funcation
-def SignOut():
-    op = BarcodeWindow("Sign Out")
-
 #Admin functions exit program
 #TODO Later add a setting in Keyboard for "Password mode"
 def Admin(root):
@@ -264,7 +262,7 @@ def disable_event():
 
 class MainScreen(Tk):
     def __init__(self):
-        self.screen= Tk()
+        self.screen = Tk()
         # Window Setup
         self.screen.title('Sign-In and Sign-Out')
         # Define the geometry of the function
@@ -292,7 +290,46 @@ class MainScreen(Tk):
         elif event.keysym == 'Return':
             scan_id = int(self.code[-6:])
             print(scan_id)
+            process_barcode(scan_id)
 
+
+class OperationSelector(Tk):
+    def __init__(self, user):
+        self.screen = Tk()
+        self.screen.geometry('800x200+500+400')
+        self.screen.resizable(False, False)
+        self.screen.title('Select an Operation')
+        self.user = user
+        textFrame(self.screen, text="Select an Operation", font_size=22, color = "black", relx=0.5, rely=0.2, relwidth=0.88, relheight=0.2)
+        buttonFrame(self.screen, text="Lateness", command=lambda:Lateness(self.user), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
+        buttonFrame(self.screen, text="Off Campus", command=lambda:LocationChoiceWindow(self.user), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
+        
+def Lateness(user):
+    root = Tk()
+    keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
+    root.iconify()
+    root.wait_window(keybd.keyboard)
+    if keybd.entry != "":
+        print(f"{user['First Name']} is late because {keybd.entry}")
+    else:
+        print("Operation Canceled")
+
+
+
+def process_barcode(scan_id):
+    if scan_id in student_ids:
+        # error_pop("This beta is currently faculty-only, but is coming soon for students!", False)
+        user = student_users[student_users['Person ID'] == int(scan_id)].iloc[0]
+        print("Student User")
+        type = "Student"
+    elif scan_id in faculty_ids:
+        user = faculty_users[faculty_users['Person ID'] == int(scan_id)].iloc[0]
+        print("Faculty User")
+        type = "Faculty"
+    else:
+        raise Exception("User Not Found Error")
+    user["type"] = type
+    OperationSelector(user)
 
 def main():
     root = MainScreen()
