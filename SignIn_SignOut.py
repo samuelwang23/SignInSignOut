@@ -11,14 +11,13 @@ import glob
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import time
-
 from pytz import timezone
+
 from keyboard import Keyboard
-import pygame
-
-
-
 from utils import *
+
+import pygame
+pygame.mixer.init()
 
 
 tz = timezone('EST')
@@ -47,10 +46,7 @@ fac_off_campus = records.worksheet("Faculty Off Campus")
 fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
 
 
-
-# pygame.mixer.init()
-
-# TODO make update Records happen more effectively 
+# TODO DATA: make update Records happen more effectively 
 # records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
 # lateness = records.worksheet("Lateness")
 # lateness_entry = pd.DataFrame(lateness.get_all_records())
@@ -75,13 +71,13 @@ class Reason(Tk):
         text = 'Please enter your reason for lateness'
         wait = Tk()
         keybd = Keyboard(wait, title, text)
-        # TODO Add to GSpread Queue
+        # TODO DATA: Add to GSpread Queue
         wait.iconify()
         wait.wait_window(keybd.keyboard)
         print(keybd.entry)
         wait.destroy()
         
-# TODO Later: Make this accept a custom list of locations
+# TODO NEW GUI: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
         window = Toplevel()
@@ -95,10 +91,10 @@ class LocationChoiceWindow(Tk):
 
 
         self.selected_place = StringVar(window, value='Others')
-        locations = (('Rich\'s Deli', 'Rich\'s'),
+        locations = (('Wawa', 'Wawa'),
+                    ('Rich\'s Deli', 'Rich\'s'),
                     ('Cantina Feliz', 'Cantina'),
                     ('Little Italy', 'Little Italy'),
-                    ('Wawa', 'Wawa'),
                     ('Zakes Cafe', 'Zakes Cafe'),
                     ('Walking Somewhere else', 'Walking'),
                     ('Driving Off Campus', 'Driving'))
@@ -120,22 +116,20 @@ class CustomLocation(Tk):
         text = 'Please enter where you are going:'
         wait = Tk()
         keybd = Keyboard(wait, title, text)
-        # TODO Add to GSpread Queue
+        # TODO DATA: Add to GSpread Queue
         wait.iconify()
         wait.wait_window(keybd.keyboard)
         print(keybd.entry)
         wait.destroy()
-        
-        
-        
 
-# TODO: Later Reconcile differences between Functions "LogSignOut" and "FacultyLogSignOut" 
+# TODO:Reconcile differences between Functions "LogSignOut" and "FacultyLogSignOut" 
 def LogSignOut(location, user, transport, window):
     date, clock = get_date_and_clock()
     if user["Type"] == "Student":
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, "Absent"]
-        off_campus.append_row(student_data)
-        #Close Window
+        # off_campus.append_row(student_data)
+        off_campus_entry.append(student_data)
+        # Close Window
         window.destroy()
     else:
         gone_for_day_check = Tk()
@@ -143,17 +137,15 @@ def LogSignOut(location, user, transport, window):
         buttonframe = Frame(gone_for_day_check)
         buttonframe.grid(row=2, column=0, columnspan=2)        
         Label(gone_for_day_check, text="Are you leaving for the rest of the day?", font=('Helvetica 25 bold')).grid(row=0, column=0, padx=20, pady = 20)
-        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, args, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, args, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
         
 
-def FacultySignOut(location, args, gone_for_day, window) :
-    user = args["user"]
+def FacultySignOut(location, user, gone_for_day, window) :
     date, clock = get_date_and_clock()
     time_back = ""
     if gone_for_day:
         time_back = "Gone For Day"
-    
     
     faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), location, time_back, "Absent"]
     fac_off_campus.append_row(faculty_data)
@@ -165,39 +157,29 @@ def FacultySignOut(location, args, gone_for_day, window) :
         confirm_msg += " and is leaving for the day"
     success_confirm(confirm_msg, len(fac_off_campus.get_all_values()))
 
-
-# TODO Later Make this and Error Pop classes that inherit from each other, super().init
-def success_confirm(confirm_text, row_id):
-    confirmation = Toplevel()
-    confirmation.geometry("500x400+700+300")
-    label = Label(confirmation, text=confirm_text, font=('Helvetica 20 bold'))
+def create_confirm_box(text, type):
+    message = Toplevel()
+    message.geometry("500x400+700+300")
+    label = Label(message, text=text, font=('Helvetica 20 bold'))
     label.pack()
     label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width() + 10))
-
-    canvas = Canvas(confirmation, width = 300, height = 200)
+    image = ImageTk.PhotoImage(file = f'{type}.png')
+    canvas = Canvas(message, width = 300, height = 200)
     canvas.pack(expand = YES, fill = BOTH)
-    complete = ImageTk.PhotoImage(file = 'complete.png')
-    canvas.create_image(250, 170, image = complete, anchor = CENTER)
-    canvas.complete = complete
+    canvas.create_image(250, 170, image = image, anchor = CENTER)
+    canvas.image = image
+    return message
+
+def success_confirm(confirm_text, row_id):
+    confirmation = create_confirm_box(confirm_text, "complete")
     Button(confirmation, text = "Cancel", font ='Helvetica 17 bold', command=lambda:fac_off_campus.delete_rows(row_id)).pack()
     confirmation.overrideredirect(True)
     confirmation.after(2000,lambda:confirmation.destroy())
 
 def error_pop(error_text, audio=True, length=3000):
-
-    message = Toplevel()
-    message.geometry("500x350+700+500")
-    label = Label(message, text=error_text, font=('Helvetica 20 bold'))
-    label.pack()
-    label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width() + 5))
-
-    canvas = Canvas(message, width = 300, height = 200)
-    canvas.pack(expand = YES, fill = BOTH)
-    error = ImageTk.PhotoImage(file = 'error.png')
-    canvas.create_image(250, 170, image = error, anchor = CENTER)
-    canvas.error = error
-    message.overrideredirect(True)
-    message.after(length,lambda:message.destroy())   
+    error_msg = create_confirm_box(error_text, "error")
+    error_msg.overrideredirect(True)
+    error_msg.after(length,lambda:error_msg.destroy())   
     if audio:
         speaker_volume = 0.5
         pygame.mixer.music.set_volume(speaker_volume)
@@ -210,16 +192,13 @@ def error_pop(error_text, audio=True, length=3000):
 def Admin(root):
     keybd = Keyboard(root, "Please Enter the Password", "Password")
 
-    #TODO Later Remove this password from the code itself somehow
+    #TODO DATA:Later Remove this password from the code itself somehow
     root.wait_window(keybd.keyboard)
     if keybd.entry == "patriot":
         root.quit()
     else:
         error_pop("Incorrect Password")    
         
-
-
-
 #Disable X on the window
 def disable_event():
     pass
@@ -247,11 +226,12 @@ class MainScreen(Tk):
         # Set up barcode reading
         self.code = ''
         self.screen.bind('<Key>', self.get_key)
+        self.state = "active"
 
     def get_key(self, event):
-        if event.char in '0123456789':
+        if event.char in '0123456789' and self.state =="active":
             self.code += event.char
-        elif event.keysym == 'Return':
+        elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
             process_barcode(scan_id)
@@ -265,9 +245,15 @@ class OperationSelector(Tk):
         self.screen.title('Select an Operation')
         self.user = user
         textFrame(self.screen, text="Select an Operation", font_size=22, color = "black", relx=0.5, rely=0.2, relwidth=0.88, relheight=0.2)
-        buttonFrame(self.screen, text="Lateness", command=lambda:Lateness(self.user), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
-        buttonFrame(self.screen, text="Off Campus", command=lambda:LocationChoiceWindow(self.user), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
-    
+        buttonFrame(self.screen, text="Lateness", command=lambda:self.dispatch_operation("Lateness"), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
+        buttonFrame(self.screen, text="Off Campus", command=lambda:self.dispatch_operation("Off Campus"), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
+
+    def dispatch_operation(self, operation):
+        self.screen.destroy()
+        if operation == "Lateness":
+            Lateness(self.user)
+        elif operation == "Off Campus":
+            LocationChoiceWindow(self.user)
 
 def Lateness(user):
     root = Tk()
@@ -294,7 +280,8 @@ def process_barcode(scan_id):
     else:
         raise Exception("User Not Found Error")
     user["type"] = type
-    OperationSelector(user)
+    selector = OperationSelector(user)
+    selector.screen.grab_set()
 
 def main():
     root = MainScreen()
