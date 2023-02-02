@@ -80,110 +80,6 @@ class Reason(Tk):
         wait.destroy()
         
 
-#TODO Refactor this class completely
-class BarcodeWindow(Tk):
-
-    def __init__(self, purpose):
-        Tk.__init__(self)
-        title = purpose
-        self.title(title)
-        self.purpose = purpose
-        # self.geometry('1200x130')
-        self.geometry(f'+300+500')
-
-        self.code = ''
-
-        self.label = Label(self, text="Please use the barcode scanner to scan your badge.", font=('Helvetica 28 bold'))
-        self.label.pack(pady= 10, padx =3)
-
-        self.bind('<Key>', self.get_key)
-        bttn = Button(self, text ="Cancel",font=('Helvetica 20'), command=self.destroy)
-        bttn.pack(pady= 10, padx =3)
-
-
-
-    def get_key(self, event):
-
-        if event.char in '0123456789':
-            self.code += event.char
-            #print('>', self.code)
-            #self.label['text'] = self.code
-
-        elif event.keysym == 'Return':
-            
-            # try:
-                # scan_id = int(self.code[-6:])
-                # Desktop Test - not using barcode
-                # scan_id = 213660
-                scan_id = 196097
-                print("Scanned in:", scan_id)
-                self.withdraw()
-
-                
-
-                
-                if scan_id in student_ids:
-                    error_pop("This beta is currently faculty-only, but is coming soon for students!", False)
-                    user = student_users[student_users['Person ID'] == int(scan_id)].iloc[0]
-                    print("Student User")
-                elif scan_id in faculty_ids:
-                    user = faculty_users[faculty_users['Person ID'] == int(scan_id)].iloc[0]
-                    print("Faculty User")
-                else:
-                    raise Exception("User Not Found Error")
-                    
-#                 if askyesno('Name', "Are you "  + name + "?", font = ('Helvetica 14 bold')):
-                
-                
-                if self.purpose == "Sign In":
-                    pass
-                    # reas = Reason(user)
-                # elif self.purpose == "Sign Out" and user["Type"] == "Student":   
-                #     loc = LocationChoiceWindow(user)
-                    
-                elif user["Type"] == "Faculty":
-                    # Check if there is an outstanding record
-                    date, clock = get_date_and_clock()
-                    # print(fac_off_campus_entry.columns)
-                    all_outstanding_records = fac_off_campus_entry[(fac_off_campus_entry["Time Back"] == "") & (fac_off_campus_entry["Date"] == date)]
-                    IDs = pd.DataFrame([])
-                    if len(all_outstanding_records) > 0:
-                        IDs = all_outstanding_records["ID"]
-                    outstanding_records = IDs[IDs.isin([scan_id])]
-                    if len(outstanding_records) > 0:
-                        row_index = outstanding_records.index[-1] + 2
-                        update_row = fac_off_campus.row_values(row_index)
-
-                        sign_in_check = Toplevel()
-                        sign_in_check.geometry("700x200+450+450")
-                        buttonframe = Frame(sign_in_check)
-                        buttonframe.grid(row=2, column=0, columnspan=2)        
-                        label = Label(sign_in_check, text=f"{clean_name(update_row[2])}, are you signing in from your trip to {update_row[4]}?", font=('Helvetica 20 bold'))
-                        
-                        label.bind('<Configure>', lambda e: label.config(wraplength=650))
-
-                        label.grid(row=0, column=0, padx=50, pady = 20)
-                        
-                        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:OffCampusReturn(row_index, clock, sign_in_check)).grid(row= 1, column=0, padx= 10)
-                        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:sign_in_check.destroy()).grid(row= 1, column=2, padx= 10)
-
-
-                    else:
-                        # args = {"user": user, "transport": "Walk"}
-                        # LogSignOut("home", args) 
-                        CustomLocation(user, None, "Drive")
-                        
-                    # if scan_id in fac_off_campus[fac_off_campus["Time Back"] == ""]["ID"].values:
-                    #     if 
-                   
-                #else:
-                    #self.code = ""
-                    #self.deiconify()
-
-            # except Exception as e:
-                # print(e)
-                # error_pop("Invalid ID: Please try rescanning your ID")
-                # print("Invalid ID")
 
     
 
@@ -366,32 +262,43 @@ def Admin(root):
 def disable_event():
     pass
 
+class MainScreen(Tk):
+    def __init__(self):
+        self.screen= Tk()
+        # Window Setup
+        self.screen.title('Sign-In and Sign-Out')
+        # Define the geometry of the function
+        self.screen.geometry("1400x900")
+        # Create a fullscreen window
+        self.screen.attributes('-fullscreen', True)
+        # Disable the Close Window Control Icon
+        self.screen.protocol("WM_DELETE_WINDOW", disable_event)
+        
+        #Create Title Splash
+        textFrame(self.screen, text="Germantown Academy Sign In Sign Out System", font_size=40, color = "black", relx=0.5, rely=0.68, relwidth= 1, relheight=0.1)
+        textFrame(self.screen, text="Please scan your key card.", font_size=70, color = "black", relx=0.45, rely=0.80, relwidth= 0.75, relheight=0.10)
+        textFrame(self.screen, text="An Advanced Topics in CS Project created by Sam Wang under the guidance of Mr. Oswald, Ms. Kennedy, and Mr. DiFranco", font_size=18, color = "blue", relx=0.5, rely=0.95, relwidth=0.88, relheight=0.04)
+
+        # # Create buttons
+        buttonFrame(self.screen, text="Admin", command=lambda:Admin(self.screen), font_size=36, relx=0.85, rely=0.80, relwidth=0.15, relheight=0.09)    
+
+        # Set up barcode reading
+        self.code = ''
+        self.screen.bind('<Key>', self.get_key)
+
+    def get_key(self, event):
+        if event.char in '0123456789':
+            self.code += event.char
+        elif event.keysym == 'Return':
+            scan_id = int(self.code[-6:])
+            print(scan_id)
+
+
 def main():
-
-    root= Tk()
-    # Window Setup
-    root.title('Sign-In and Sign-Out')
-    # Define the geometry of the function
-    root.geometry("1400x900")
-    # Create a fullscreen window
-    root.attributes('-fullscreen', True)
-    #Disable the Close Window Control Icon
-    root.protocol("WM_DELETE_WINDOW", disable_event)
-    
-    #Create Title Splash
+    root = MainScreen()
     title_image = renderImage("GA.png", 1600, 600)
-    imageFrame(root, title_image, 0.5, 0.05, 0.8, 0.5)
-    textFrame(root, text="Germantown Academy Sign In Sign Out System", font_size=40, color = "black", relx=0.5, rely=0.68, relwidth= 1, relheight=0.1)
-    textFrame(root, text="Please click on a button to sign-in or sign-out", font_size=25, color = "black", relx=0.4, rely=0.75, relwidth= 0.75, relheight=0.05)
-    textFrame(root, text="An Advanced Topics in CS Project created by Sam Wang under the guidance of Mr. Oswald, Ms. Kennedy, and Mr. DiFranco", font_size=18, color = "blue", relx=0.5, rely=0.95, relwidth=0.88, relheight=0.04)
-
-
-    # Create buttons
-    buttonFrame(root, text="Lateness", command=SignIn, font_size=36, relx=0.2, rely=0.86, relwidth=0.25, relheight=0.09)
-    buttonFrame(root, text="Off Campus", command=SignOut, font_size=36, relx=0.52, rely=0.86, relwidth=0.25, relheight=0.09)
-    buttonFrame(root, text="Admin", command=lambda:Admin(root), font_size=36, relx=0.85, rely=0.86, relwidth=0.15, relheight=0.09)    
-
-    root.mainloop()
+    imageFrame(root.screen, title_image, 0.5, 0.05, 0.8, 0.5)
+    root.screen.mainloop()
 
 if __name__ == "__main__":
     main()
