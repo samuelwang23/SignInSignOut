@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import ImageTk, Image
 from datetime import datetime
+import pygame
 
 def get_date_and_clock():
     date = datetime.now().strftime('%Y-%m-%d')
@@ -40,3 +41,34 @@ def buttonFrame(window, text, command, font_size, relx, rely, relheight, relwidt
     frame.place(relx=relx, rely=rely, relwidth=relwidth, relheight=relheight, anchor='s')
     btn1 = Button(frame, text = text, font = f'Helvetica {font_size} bold', command=command)
     btn1.place(relwidth = 1, relheight= 1)
+
+def create_confirm_box(text, type):
+    message = Toplevel()
+    message.geometry("500x400+700+300")
+    label = Label(message, text=text, font=('Helvetica 20 bold'))
+    label.pack()
+    label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width() + 10))
+    image = ImageTk.PhotoImage(file = f'{type}.png')
+    canvas = Canvas(message, width = 300, height = 200)
+    canvas.pack(expand = YES, fill = BOTH)
+    canvas.create_image(250, 170, image = image, anchor = CENTER)
+    canvas.image = image
+    return message
+
+def success_confirm(confirm_text, row_id):
+    confirmation = create_confirm_box(confirm_text, "complete")
+    #TODO: Fix the fact there is a data leak in the confirm box - this is a cancel operation - call from data handler?
+    # Button(confirmation, text = "Cancel", font ='Helvetica 17 bold', command=lambda:fac_off_campus.delete_rows(row_id)).pack()
+    confirmation.overrideredirect(True)
+    confirmation.after(2000,lambda:confirmation.destroy())
+
+def error_pop(error_text, audio=True, length=3000):
+    error_msg = create_confirm_box(error_text, "error")
+    error_msg.overrideredirect(True)
+    error_msg.after(length,lambda:error_msg.destroy())   
+    if audio:
+        speaker_volume = 0.5
+        pygame.mixer.music.set_volume(speaker_volume)
+        pygame.mixer.music.load('output1.mp3')
+        pygame.mixer.music.play()
+    

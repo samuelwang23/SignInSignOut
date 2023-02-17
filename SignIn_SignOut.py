@@ -10,58 +10,22 @@ import random
 import glob
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import time
-from pytz import timezone
+
 
 from keyboard import Keyboard
 from utils import *
-
+from data import data_handler
 import pygame
 pygame.mixer.init()
 
-
-tz = timezone('EST')
-
-# Later TODO Make this into a model class that handles the Google SpreadSheet side of things
-gc = gspread.service_account(filename='myCredentials.json')
-
-
-IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
-students = IDList.worksheet("Student")
-student_users = pd.DataFrame(students.get_all_records()) 
-student_users["Type"] = "Student"
-student_ids = student_users["Person ID"].values
-
-faculty = IDList.worksheet("Faculty")
-faculty_users = pd.DataFrame(faculty.get_all_records()) 
-faculty_users["Type"] = "Faculty"
-faculty_ids = faculty_users["Person ID"].values
-
-records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
-lateness = records.worksheet("Lateness")
-lateness_entry = pd.DataFrame(lateness.get_all_records())
-off_campus = records.worksheet("Off Campus")
-off_campus_entry = pd.DataFrame(off_campus.get_all_records())
-fac_off_campus = records.worksheet("Faculty Off Campus")
-fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
-
-
-# TODO DATA: make update Records happen more effectively 
-# records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
-# lateness = records.worksheet("Lateness")
-# lateness_entry = pd.DataFrame(lateness.get_all_records())
-# off_campus = records.worksheet("Off Campus")
-# off_campus_entry = pd.DataFrame(off_campus.get_all_records())
-# fac_off_campus = records.worksheet("Faculty Off Campus")
-# fac_off_campus_entry = pd.DataFrame(fac_off_campus.get_all_records())
-# # print(fac_off_campus_entry)
-
+data_handler = data_handler()
 
 def LogSignIn(reason, args):
     user = args["user"]
     date, clock = get_date_and_clock()
     student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-    lateness.append_row(student_data)
+    # TODO Fix
+    # lateness.append_row(student_data)
 
 
 class Reason(Tk):
@@ -122,13 +86,10 @@ class CustomLocation(Tk):
         print(keybd.entry)
         wait.destroy()
 
-# TODO:Reconcile differences between Functions "LogSignOut" and "FacultyLogSignOut" 
 def LogSignOut(location, user, transport, window):
-    date, clock = get_date_and_clock()
+    # TODO: Fix this - this should be based on the transportation type (ie driving or not), not user type
     if user["Type"] == "Student":
-        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, "Absent"]
-        # off_campus.append_row(student_data)
-        off_campus_entry.append(student_data)
+        data_handler.log_student_sign_out(location, user, transport, window)
         # Close Window
         window.destroy()
     else:
@@ -137,55 +98,10 @@ def LogSignOut(location, user, transport, window):
         buttonframe = Frame(gone_for_day_check)
         buttonframe.grid(row=2, column=0, columnspan=2)        
         Label(gone_for_day_check, text="Are you leaving for the rest of the day?", font=('Helvetica 25 bold')).grid(row=0, column=0, padx=20, pady = 20)
-        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:FacultySignOut(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
-        
+        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
 
-def FacultySignOut(location, user, gone_for_day, window) :
-    date, clock = get_date_and_clock()
-    time_back = ""
-    if gone_for_day:
-        time_back = "Gone For Day"
-    
-    faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), location, time_back, "Absent"]
-    fac_off_campus.append_row(faculty_data)
-    window.destroy()
 
-    #Confirmation Window
-    confirm_msg = f"{ clean_name(user['Full Name']) } is going to {location}"
-    if gone_for_day:
-        confirm_msg += " and is leaving for the day"
-    success_confirm(confirm_msg, len(fac_off_campus.get_all_values()))
-
-def create_confirm_box(text, type):
-    message = Toplevel()
-    message.geometry("500x400+700+300")
-    label = Label(message, text=text, font=('Helvetica 20 bold'))
-    label.pack()
-    label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width() + 10))
-    image = ImageTk.PhotoImage(file = f'{type}.png')
-    canvas = Canvas(message, width = 300, height = 200)
-    canvas.pack(expand = YES, fill = BOTH)
-    canvas.create_image(250, 170, image = image, anchor = CENTER)
-    canvas.image = image
-    return message
-
-def success_confirm(confirm_text, row_id):
-    confirmation = create_confirm_box(confirm_text, "complete")
-    Button(confirmation, text = "Cancel", font ='Helvetica 17 bold', command=lambda:fac_off_campus.delete_rows(row_id)).pack()
-    confirmation.overrideredirect(True)
-    confirmation.after(2000,lambda:confirmation.destroy())
-
-def error_pop(error_text, audio=True, length=3000):
-    error_msg = create_confirm_box(error_text, "error")
-    error_msg.overrideredirect(True)
-    error_msg.after(length,lambda:error_msg.destroy())   
-    if audio:
-        speaker_volume = 0.5
-        pygame.mixer.music.set_volume(speaker_volume)
-        pygame.mixer.music.load('output1.mp3')
-        pygame.mixer.music.play()
-    
 
 #Admin functions exit program
 #TODO Later add a setting in Keyboard for "Password mode"
@@ -268,18 +184,11 @@ def Lateness(user):
 
 
 def process_barcode(scan_id):
-    if scan_id in student_ids:
-        # error_pop("This beta is currently faculty-only, but is coming soon for students!", False)
-        user = student_users[student_users['Person ID'] == int(scan_id)].iloc[0]
-        print("Student User")
-        type = "Student"
-    elif scan_id in faculty_ids:
-        user = faculty_users[faculty_users['Person ID'] == int(scan_id)].iloc[0]
-        print("Faculty User")
-        type = "Faculty"
-    else:
-        raise Exception("User Not Found Error")
-    user["type"] = type
+    user_type = data_handler.user_type_from_barcode(scan_id)
+    if user_type:
+        user = data_handler.get_user_from_barcode(scan_id, user_type)
+        user["type"] = user_type
+
     selector = OperationSelector(user)
     selector.screen.grab_set()
 
