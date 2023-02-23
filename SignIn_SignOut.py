@@ -10,8 +10,6 @@ import random
 import glob
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
-
 from keyboard import Keyboard
 from utils import *
 from data import data_handler
@@ -151,7 +149,7 @@ class MainScreen(Tk):
             scan_id = int(self.code[-6:])
             print(scan_id)
             process_barcode(scan_id)
-
+       
 
 class OperationSelector(Tk):
     def __init__(self, user):
@@ -190,7 +188,12 @@ def process_barcode(scan_id):
         user["type"] = user_type
 
     selector = OperationSelector(user)
-    selector.screen.grab_set()
+    try:
+        selector.screen.grab_set()
+    except Exception:
+        # Prevent multiple operation screens from being created
+        print("grab error")
+        selector.screen.destroy()
 
 def main():
     root = MainScreen()
