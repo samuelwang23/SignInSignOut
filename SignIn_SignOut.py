@@ -18,26 +18,6 @@ pygame.mixer.init()
 
 data_handler = data_handler()
 
-def LogSignIn(reason, args):
-    user = args["user"]
-    date, clock = get_date_and_clock()
-    student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-    # TODO Fix
-    # lateness.append_row(student_data)
-
-
-class Reason(Tk):
-    def __init__(self, user):
-
-        title = 'Enter your reason for lateness'
-        text = 'Please enter your reason for lateness'
-        wait = Tk()
-        keybd = Keyboard(wait, title, text)
-        # TODO DATA: Add to GSpread Queue
-        wait.iconify()
-        wait.wait_window(keybd.keyboard)
-        print(keybd.entry)
-        wait.destroy()
         
 # TODO NEW GUI: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
@@ -62,12 +42,13 @@ class LocationChoiceWindow(Tk):
                     ('Driving Off Campus', 'Driving'))
 
         # buttons
+        button_grid = [None] * len(locations)
         for i, place in enumerate(locations):
             if place[1] != "Walking" and place[1] != "Driving":
                 photo = PhotoImage(file = f"logos/{place[1]}.png")
-                r = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda:LogSignOut(place[1], self.user, "Walk", window))
-                r.image = photo
-                r.grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
+                button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda:LogSignOut(i , self.user, "Walk", window))
+                button_grid[i].image = photo
+                button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
                 r = Button(window, text=place[0], font=('Arial 24'), command=lambda:CustomLocation(self.user, window, place[1]))
                 r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
@@ -78,26 +59,34 @@ class CustomLocation(Tk):
         text = 'Please enter where you are going:'
         wait = Tk()
         keybd = Keyboard(wait, title, text)
-        # TODO DATA: Add to GSpread Queue
         wait.iconify()
         wait.wait_window(keybd.keyboard)
-        print(keybd.entry)
+        location = keybd.entry
+        LogSignOut(location, user, transport, window)
         wait.destroy()
 
 def LogSignOut(location, user, transport, window):
-    # TODO: Fix this - this should be based on the transportation type (ie driving or not), not user type
-    if user["Type"] == "Student":
+    # Student users who are walking are not allowed to leave for the day
+    if transport == "Walk" and user["Type"] == "Student":
         data_handler.log_student_sign_out(location, user, transport, window)
-        # Close Window
         window.destroy()
     else:
+        # Check if the user is leaving for the day or not
         gone_for_day_check = Tk()
         gone_for_day_check.geometry("700x180+450+450")
         buttonframe = Frame(gone_for_day_check)
-        buttonframe.grid(row=2, column=0, columnspan=2)        
+        buttonframe.grid(row=2, column=0, columnspan=2)      
         Label(gone_for_day_check, text="Are you leaving for the rest of the day?", font=('Helvetica 25 bold')).grid(row=0, column=0, padx=20, pady = 20)
-        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+        window.destroy()
+        if user["Type"] == "Student":
+            Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            data_handler.log_student_sign_out(location, user, transport, gone_for_day_check)
+            # Close Window
+            
+        else:
+            Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
 
 
 
@@ -148,8 +137,7 @@ class MainScreen(Tk):
         elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
-            process_barcode(scan_id)
-       
+            process_barcode(scan_id) 
 
 class OperationSelector(Tk):
     def __init__(self, user):

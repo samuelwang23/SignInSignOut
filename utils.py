@@ -2,6 +2,7 @@ from tkinter import *
 from PIL import ImageTk, Image
 from datetime import datetime
 import pygame
+import inspect
 
 def get_date_and_clock():
     date = datetime.now().strftime('%Y-%m-%d')
@@ -55,9 +56,10 @@ def create_confirm_box(text, type):
     canvas.image = image
     return message
 
-def success_confirm(confirm_text, row_id):
+def success_confirm(confirm_text):
     confirmation = create_confirm_box(confirm_text, "complete")
-    #TODO: Fix the fact there is a data leak in the confirm box - this is a cancel operation - call from data handler?
+    operation_name = inspect.stack()[1][3]
+    print(operation_name)
     # Button(confirmation, text = "Cancel", font ='Helvetica 17 bold', command=lambda:fac_off_campus.delete_rows(row_id)).pack()
     confirmation.overrideredirect(True)
     confirmation.after(2000,lambda:confirmation.destroy())

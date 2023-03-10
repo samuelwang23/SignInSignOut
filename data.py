@@ -4,6 +4,7 @@ import pandas as pd
 from utils import *
 import time
 from pytz import timezone
+import inspect
 
 tz = timezone('EST')
 
@@ -28,11 +29,26 @@ class data_handler:
         else:
             #Unknown outcome
             pass
-    
-    def log_student_sign_out(self, location, user, transport, window):
+    def log_student_lateness(self, user, reason):
         date, clock = get_date_and_clock()
-        student_data = pd.Series([date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, "Absent"])
+        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
+        pd.concat([self.lateness_entry, student_data])
+
+    def log_student_sign_out(self, location, user, transport, gone_for_day, window):
+        print(location)
+        date, clock = get_date_and_clock()
+        student_data = pd.Series([date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, gone_for_day, "Absent"])
+        # print(student_data)
         pd.concat([self.off_campus_entry, student_data])
+
+        #Confirmation Window
+        # confirm_msg = f"{ clean_name(user['First Name']) } is going to {location}"
+        confirm_msg = f"{user['First Name']} is going to {location}"
+        # if gone_for_day:
+        #     confirm_msg += " and is leaving for the day"
+        # This will be fixed as part of the confirm data leak fix
+        success_confirm(confirm_msg)
+        window.destroy()
 
     def log_faculty_sign_out(self, location, user, gone_for_day, window) :
         date, clock = get_date_and_clock()
@@ -45,15 +61,9 @@ class data_handler:
         self.fac_off_campus_entry.concat(faculty_data)
         window.destroy()
 
-        #Confirmation Window
-        confirm_msg = f"{ clean_name(user['Full Name']) } is going to {location}"
-        if gone_for_day:
-            confirm_msg += " and is leaving for the day"
-        # This will be fixed as part of the confirm data leak fix
-        # success_confirm(confirm_msg, len(fac_off_campus.get_all_values()))
+        
 
     def retrieve_google_sheets(self):
-        # TODO: May only need to save the final variable of student_ids/faculty_ids
         self.IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
         self.students = self.IDList.worksheet("Student")
         self.student_users = pd.DataFrame(self.students.get_all_records()) 
