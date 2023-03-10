@@ -50,15 +50,15 @@ class data_handler:
         success_confirm(confirm_msg)
         window.destroy()
 
-    def log_faculty_sign_out(self, location, user, gone_for_day, window) :
+    def log_faculty_sign_out(self, user, gone_for_day, window) :
         date, clock = get_date_and_clock()
         if gone_for_day:
             time_back = "Gone For Day"
         else:
             time_back = ""
 
-        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), location, time_back, "Absent"]
-        self.fac_off_campus_entry.concat(faculty_data)
+        faculty_data = pd.Series([date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"])
+        pd.concat([self.fac_off_campus_entry, faculty_data])
         window.destroy()
 
         
@@ -74,6 +74,8 @@ class data_handler:
         self.faculty_users = pd.DataFrame(self.faculty.get_all_records()) 
         self.faculty_users["Type"] = "Faculty"
         self.faculty_ids = self.faculty_users["Person ID"].values
+        self.faculty_users["Last Name"] = self.faculty_users["Full Name"].apply(lambda name: name.split(", ")[0])
+        self.faculty_users["Preferred Name"] = self.faculty_users["Full Name"].apply(lambda name: name.split(", ")[1])
 
 
         # Save local copy of records and way to update
