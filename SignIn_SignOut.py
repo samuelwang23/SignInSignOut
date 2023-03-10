@@ -17,7 +17,6 @@ import pygame
 pygame.mixer.init()
 
 data_handler = data_handler()
-
         
 # TODO NEW GUI: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
@@ -57,7 +56,7 @@ class CustomLocation(Tk):
     def __init__(self, user, window, transport):
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
-        wait = Tk()
+        wait = Toplevel()
         keybd = Keyboard(wait, title, text)
         wait.iconify()
         wait.wait_window(keybd.keyboard)
@@ -72,7 +71,7 @@ def LogSignOut(location, user, transport, window):
         window.destroy()
     else:
         # Check if the user is leaving for the day or not
-        gone_for_day_check = Tk()
+        gone_for_day_check = Toplevel()
         gone_for_day_check.grab_set()
         gone_for_day_check.geometry("800x180+450+450")
         buttonframe = Frame(gone_for_day_check)
@@ -140,11 +139,12 @@ class MainScreen(Tk):
         elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
-            process_barcode(scan_id) 
+            if get_top_level_windows(self.screen) == 0:
+                process_barcode(scan_id) 
 
 class OperationSelector(Tk):
     def __init__(self, user):
-        self.screen = Tk()
+        self.screen = Toplevel()
         self.screen.geometry('800x200+500+400')
         self.screen.resizable(False, False)
         self.screen.title('Select an Operation')
@@ -161,7 +161,7 @@ class OperationSelector(Tk):
             LocationChoiceWindow(self.user)
 
 def Lateness(user):
-    root = Tk()
+    root = Toplevel()
     keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
     root.iconify()
     root.wait_window(keybd.keyboard)
@@ -169,14 +169,17 @@ def Lateness(user):
         print(f"{user['First Name']} is late because {keybd.entry}")
     else:
         print("Operation Canceled")
+    root.destroy()
 
 
 
 def process_barcode(scan_id):
+    
     user_type = data_handler.user_type_from_barcode(scan_id)
     if user_type:
         user = data_handler.get_user_from_barcode(scan_id, user_type)
         user["type"] = user_type
+        
     if user_type == "Student":
         selector = OperationSelector(user)
         try:

@@ -41,26 +41,29 @@ class data_handler:
         # print(student_data)
         pd.concat([self.off_campus_entry, student_data])
 
-        #Confirmation Window
-        # confirm_msg = f"{ clean_name(user['First Name']) } is going to {location}"
-        confirm_msg = f"{user['First Name']} is going to {location}"
-        # if gone_for_day:
-        #     confirm_msg += " and is leaving for the day"
-        # This will be fixed as part of the confirm data leak fix
+        confirm_msg = f"{user['Preferred Name']} is going to {location}"
+        if gone_for_day:
+            confirm_msg += " for the rest of the day"
         success_confirm(confirm_msg)
         window.destroy()
 
     def log_faculty_sign_out(self, user, gone_for_day, window) :
         date, clock = get_date_and_clock()
+        
+        confirm_msg = f"{user['Preferred Name']} is signing out"
+
         if gone_for_day:
             time_back = "Gone For Day"
+            confirm_msg += " for the rest of the day"
         else:
             time_back = ""
 
         faculty_data = pd.Series([date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"])
         pd.concat([self.fac_off_campus_entry, faculty_data])
+        
+        
+        success_confirm(confirm_msg)
         window.destroy()
-
         
 
     def retrieve_google_sheets(self):

@@ -73,4 +73,10 @@ def error_pop(error_text, audio=True, length=3000):
         pygame.mixer.music.set_volume(speaker_volume)
         pygame.mixer.music.load('output1.mp3')
         pygame.mixer.music.play()
-    
+
+def get_top_level_windows(root):
+    tops = [] 
+    for widget in root.winfo_children(): # Looping through widgets in main window
+        if '!toplevel' in str(widget): 
+            tops.append(widget)      
+    return len(tops)
