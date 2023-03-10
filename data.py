@@ -32,14 +32,17 @@ class data_handler:
     def log_student_lateness(self, user, reason):
         date, clock = get_date_and_clock()
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-        pd.concat([self.lateness_entry, student_data])
+        pd.concat([self.lateness_entry, pd.Series(student_data)])
+        self.lateness.append_row(student_data)
 
     def log_student_sign_out(self, location, user, transport, gone_for_day, window):
+        self.retrieve_google_sheets()
         print(location)
         date, clock = get_date_and_clock()
-        student_data = pd.Series([date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, gone_for_day, "Absent"])
-        # print(student_data)
-        pd.concat([self.off_campus_entry, student_data])
+        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, gone_for_day, "Absent"]
+        
+        pd.concat([self.off_campus_entry, pd.Series(student_data)])
+        self.off_campus.append_row(student_data)
 
         confirm_msg = f"{user['Preferred Name']} is going to {location}"
         if gone_for_day:
@@ -58,10 +61,10 @@ class data_handler:
         else:
             time_back = ""
 
-        faculty_data = pd.Series([date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"])
-        pd.concat([self.fac_off_campus_entry, faculty_data])
-        
-        
+        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]
+        pd.concat([self.fac_off_campus_entry, pd.Series(faculty_data)])
+        self.fac_off_campus.append_row(faculty_data)
+                
         success_confirm(confirm_msg)
         window.destroy()
         
