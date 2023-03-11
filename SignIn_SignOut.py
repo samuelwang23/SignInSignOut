@@ -158,7 +158,10 @@ class OperationSelector(Tk):
         if operation == "Lateness":
             Lateness(self.user)
         elif operation == "Off Campus":
-            LocationChoiceWindow(self.user)
+            # Check to make sure that the operation is allowed
+            if data_handler.operation_allowed(self.user):
+                LocationChoiceWindow(self.user)
+
 
 def Lateness(user):
     root = Toplevel()
@@ -174,10 +177,10 @@ def Lateness(user):
 def return_to_campus(user):
     return_to_campus_check = Toplevel()
     return_to_campus_check.grab_set()
-    return_to_campus_check.geometry("800x180+450+450")
+    return_to_campus_check.geometry("600x200+450+450")
     buttonframe = Frame(return_to_campus_check)
     buttonframe.grid(row=2, column=0, columnspan=2)      
-    Label(return_to_campus_check, text=f"Are you signing back in, {user['Preferred Name']}?", font=('Helvetica 25 bold'), wraplength=800, justify=CENTER).grid(row=0, column=0, padx=20, pady = 20)
+    Label(return_to_campus_check, text=f"Are you signing back in, {user['Preferred Name']}?", font=('Helvetica 25 bold'), wraplength=600, justify=CENTER).grid(row=0, column=0, padx=20, pady = 20)
     Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.return_to_campus(user, return_to_campus_check)).grid(row= 1, column=0, padx= 10)
     Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:return_to_campus_check.destroy()).grid(row= 1, column=2, padx= 10)
 

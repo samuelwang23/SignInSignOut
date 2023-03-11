@@ -5,6 +5,7 @@ from utils import *
 import time
 from pytz import timezone
 import inspect
+import json
 
 tz = timezone('EST')
 
@@ -84,6 +85,8 @@ class data_handler:
         self.faculty_users["Last Name"] = self.faculty_users["Full Name"].apply(lambda name: name.split(", ")[0])
         self.faculty_users["Preferred Name"] = self.faculty_users["Full Name"].apply(lambda name: name.split(", ")[1])
 
+        self.policy = self.IDList.worksheet("Policy")
+        self.policy_df = pd.DataFrame(self.policy.get_all_records()) 
 
         # Save local copy of records and way to update
         records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
@@ -131,3 +134,33 @@ class data_handler:
         gspread.update_cell(index+2, num_columns-1, clock)
         logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"
         window.destroy()
+    
+    def get_user_policies(self, user):
+        user_grade = int(user["Current Grade"].split(" ")[-1])
+        policies = self.policy_df[self.policy_df["Grade"] == user_grade]
+        return policies.iloc[0]
+    
+    def operation_allowed(self, user):
+        clock = get_current_time()
+        day_of_week = get_day_of_week()
+        
+        policies = self.get_user_policies(user)
+        if policies["Day of the Week"] != "All":
+            allowed_days = json.loads(policies["Day of the Week"])
+        else:
+            allowed_days = [x for x in range(0, 7)]
+        
+        earliest = get_time_from_string(policies["Earliest Sign Out Time"])
+        latest = get_time_from_string(policies["Latest Sign Out Time"])
+        # Check for the following policies: Earliest sign out time, Day of week, and Latest Sign Out Time
+        if not day_of_week in allowed_days:
+            error_pop(f"Unfortunately, you cannot sign out on this day of the week.")
+            return False
+        elif earliest > clock:
+            error_pop(f"Please wait until {policies['Earliest Sign Out Time']} to sign out")
+            return False
+        elif latest < clock:
+            error_pop(f"Unfortunately, because it is past {policies['Latest Sign Out Time']}, you can no longer sign out.")
+            return False
+        else:
+            return True

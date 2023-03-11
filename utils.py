@@ -80,3 +80,12 @@ def get_top_level_windows(root):
         if '!toplevel' in str(widget): 
             tops.append(widget)      
     return len(tops)
+
+def get_day_of_week():
+    return datetime.now().weekday()
+
+def get_time_from_string(string):
+    return datetime.strptime(string,'%H:%M')
+
+def get_current_time():
+    return datetime.now()
