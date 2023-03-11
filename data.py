@@ -32,21 +32,23 @@ class data_handler:
     def log_student_lateness(self, user, reason):
         date, clock = get_date_and_clock()
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-        pd.concat([self.lateness_entry, pd.Series(student_data)])
+        self.lateness_entry = pd.concat([self.lateness_entry, pd.Series(student_data, index=self.lateness_entry.columns).to_frame().T])
         self.lateness.append_row(student_data)
 
     def log_student_sign_out(self, location, user, transport, gone_for_day, window):
-        self.retrieve_google_sheets()
         print(location)
         date, clock = get_date_and_clock()
-        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, gone_for_day, "Absent"]
-        
-        pd.concat([self.off_campus_entry, pd.Series(student_data)])
-        self.off_campus.append_row(student_data)
+        confirm_msg = f"{user['Preferred Name']} is signing out to {location}"
 
-        confirm_msg = f"{user['Preferred Name']} is going to {location}"
         if gone_for_day:
+            time_back = "Gone For Day"
             confirm_msg += " for the rest of the day"
+        else:
+            time_back = ""
+
+        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent"]
+        self.off_campus_entry = pd.concat([self.off_campus_entry, pd.Series(student_data, index=self.off_campus_entry.columns).to_frame().T])
+        self.off_campus.append_row(student_data)
         success_confirm(confirm_msg)
         window.destroy()
 
@@ -62,9 +64,8 @@ class data_handler:
             time_back = ""
 
         faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]
-        pd.concat([self.fac_off_campus_entry, pd.Series(faculty_data)])
-        self.fac_off_campus.append_row(faculty_data)
-                
+        self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.Series(faculty_data, index=self.fac_off_campus_entry.columns).to_frame().T], axis=0, ignore_index=True)
+        self.fac_off_campus.append_row(faculty_data)           
         success_confirm(confirm_msg)
         window.destroy()
         
@@ -92,3 +93,41 @@ class data_handler:
         self.off_campus_entry = pd.DataFrame(self.off_campus.get_all_records())
         self.fac_off_campus = records.worksheet("Faculty Off Campus")
         self.fac_off_campus_entry = pd.DataFrame(self.fac_off_campus.get_all_records())
+
+    def is_user_currently_signed_out(self, user_id, user_type):
+        if user_type == "Student":
+            logs = self.off_campus_entry
+        elif user_type == "Faculty":
+            logs = self.fac_off_campus_entry
+        else:
+            print("Improper User Type given")
+        print(logs)
+        currently_signed_out_ids = logs[logs["Attendance Status"] == "Absent"]["ID"]
+        print(currently_signed_out_ids.values)
+        if user_id in currently_signed_out_ids.values:
+            print("User is off campus")
+            return True
+        else:
+            print("User is on campus")
+            return False
+    
+    def return_to_campus(self, user, window):
+        print(f"{user['Preferred Name']} is returning to campus")
+        if user["Type"] == "Student":
+            logs = self.off_campus_entry
+            gspread = self.off_campus
+        elif user["Type"] == "Faculty":
+            logs = self.fac_off_campus_entry
+            gspread = self.fac_off_campus
+        else:
+            print("Improper User Type given")
+        
+        date, clock = get_date_and_clock()
+        index = logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]].index[0]
+
+        #Time Back and Attendance Status are the second to last and last columns respectively
+        num_columns = len(logs.columns)
+        gspread.update_cell(index+2, num_columns, "Present")
+        gspread.update_cell(index+2, num_columns-1, clock)
+        logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"
+        window.destroy()

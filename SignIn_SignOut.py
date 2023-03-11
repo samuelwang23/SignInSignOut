@@ -171,6 +171,16 @@ def Lateness(user):
         print("Operation Canceled")
     root.destroy()
 
+def return_to_campus(user):
+    return_to_campus_check = Toplevel()
+    return_to_campus_check.grab_set()
+    return_to_campus_check.geometry("800x180+450+450")
+    buttonframe = Frame(return_to_campus_check)
+    buttonframe.grid(row=2, column=0, columnspan=2)      
+    Label(return_to_campus_check, text=f"Are you signing back in, {user['Preferred Name']}?", font=('Helvetica 25 bold'), wraplength=800, justify=CENTER).grid(row=0, column=0, padx=20, pady = 20)
+    Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.return_to_campus(user, return_to_campus_check)).grid(row= 1, column=0, padx= 10)
+    Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:return_to_campus_check.destroy()).grid(row= 1, column=2, padx= 10)
+
 
 
 def process_barcode(scan_id):
@@ -179,17 +189,14 @@ def process_barcode(scan_id):
     if user_type:
         user = data_handler.get_user_from_barcode(scan_id, user_type)
         user["type"] = user_type
-        
-    if user_type == "Student":
-        selector = OperationSelector(user)
-        try:
+    if data_handler.is_user_currently_signed_out(scan_id, user_type):
+        return_to_campus(user)
+    else:        
+        if user_type == "Student":
+            selector = OperationSelector(user)
             selector.screen.grab_set()
-        except Exception:
-            # Prevent multiple operation screens from being created
-            print("grab error")
-            selector.screen.destroy()
-    elif user_type == "Faculty":
-        LogSignOut(None, user, "Driving", None)
+        elif user_type == "Faculty":
+            LogSignOut(None, user, "Driving", None)
 
 def main():
     root = MainScreen()
