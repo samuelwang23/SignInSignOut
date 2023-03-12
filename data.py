@@ -37,7 +37,6 @@ class data_handler:
         self.lateness.append_row(student_data)
 
     def log_student_sign_out(self, location, user, transport, gone_for_day, window):
-        print(location)
         date, clock = get_date_and_clock()
         confirm_msg = f"{user['Preferred Name']} is signing out to {location}"
 
@@ -107,9 +106,7 @@ class data_handler:
             logs = self.fac_off_campus_entry
         else:
             print("Improper User Type given")
-        print(logs)
         currently_signed_out_ids = logs[logs["Attendance Status"] == "Absent"]["ID"]
-        print(currently_signed_out_ids.values)
         if user_id in currently_signed_out_ids.values:
             print("User is off campus")
             return True

@@ -89,3 +89,11 @@ def get_time_from_string(string):
 
 def get_current_time():
     return datetime.now()
+
+def is_root_window_in_front(root):
+    return root.tk.eval('wm stackorder '+str(root)).split(" ")[-1] == str(root)
+
+def close_children_windows(root):
+    for widget in root.winfo_children(): # Looping through widgets in main window
+        if '!toplevel' in str(widget): # If toplevel exists in the item
+            widget.destroy()

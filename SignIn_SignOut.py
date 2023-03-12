@@ -145,6 +145,9 @@ class MainScreen(Tk):
         elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
+            
+            if is_root_window_in_front(self.screen):
+                close_children_windows(self.screen)
             if get_top_level_windows(self.screen) == 0:
                 process_barcode(scan_id) 
 
