@@ -97,6 +97,9 @@ class data_handler:
         self.fac_off_campus = records.worksheet("Faculty Off Campus")
         self.fac_off_campus_entry = pd.DataFrame(self.fac_off_campus.get_all_records())
 
+        self.driving_notes = records.worksheet("Driving Note")
+        self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
+
     def is_user_currently_signed_out(self, user_id, user_type):
         if user_type == "Student":
             logs = self.off_campus_entry
@@ -149,7 +152,9 @@ class data_handler:
             allowed_days = json.loads(policies["Day of the Week"])
         else:
             allowed_days = [x for x in range(0, 7)]
-        
+        #Temporary Dev Fix
+        clock = get_time_from_string("12:15")
+
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])
         latest = get_time_from_string(policies["Latest Sign Out Time"])
         # Check for the following policies: Earliest sign out time, Day of week, and Latest Sign Out Time
@@ -164,3 +169,7 @@ class data_handler:
             return False
         else:
             return True
+    
+    def does_user_have_driving_note(self, user):
+        date, clock = get_date_and_clock()
+        return self.driving_notes_df[(self.driving_notes_df["Date"] == date) & (self.driving_notes_df["Student ID"] == user["Person ID"])].shape[0] <= 0

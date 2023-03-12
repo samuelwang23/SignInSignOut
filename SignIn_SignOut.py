@@ -49,20 +49,27 @@ class LocationChoiceWindow(Tk):
                 button_grid[i].image = photo
                 button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
-                r = Button(window, text=place[0], font=('Arial 24'), command=lambda:CustomLocation(self.user, window, place[1]))
+                r = Button(window, text=place[0], font=('Arial 24'), command=lambda place=place:CustomLocation(self.user, window, place[1]))
                 r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
 
 class CustomLocation(Tk):
     def __init__(self, user, window, transport):
+        if transport == "Driving" and data_handler.does_user_have_driving_note(user):
+            error_pop("The system's records does not currently have a driving permission note for you today.")
+            return
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
         wait = Toplevel()
         keybd = Keyboard(wait, title, text)
         wait.iconify()
         wait.wait_window(keybd.keyboard)
-        location = keybd.entry
-        LogSignOut(location, user, transport, window)
         wait.destroy()
+        window.destroy()
+        location = keybd.entry
+        # TODO: Fix this when the operation is canceled
+        LogSignOut(location, user, transport, window)
+        
+        
 
 def LogSignOut(location, user, transport, window):
     # Student users who are walking are not allowed to leave for the day
@@ -82,7 +89,6 @@ def LogSignOut(location, user, transport, window):
         if user["Type"] == "Student":
             Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
             Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
-            data_handler.log_student_sign_out(location, user, transport, gone_for_day_check)
             # Close Window
             window.destroy()
 
