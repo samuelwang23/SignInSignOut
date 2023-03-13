@@ -128,12 +128,12 @@ class MainScreen(Tk):
         
         #Create Title Splash
         textFrame(self.screen, text="Germantown Academy Sign In Sign Out System", font_size=40, color = "black", relx=0.5, rely=0.68, relwidth= 1, relheight=0.1)
-        textFrame(self.screen, text="Please scan your key card.", font_size=70, color = "black", relx=0.45, rely=0.80, relwidth= 0.75, relheight=0.10)
+        textFrame(self.screen, text="Please scan your key card.", font_size=60, color = "black", relx=0.45, rely=0.80, relwidth= 0.75, relheight=0.10)
         textFrame(self.screen, text="An Advanced Topics in CS Project created by Sam Wang under the guidance of Mr. Oswald, Ms. Kennedy, and Mr. DiFranco", font_size=18, color = "blue", relx=0.5, rely=0.95, relwidth=0.88, relheight=0.04)
 
         # # Create buttons
         buttonFrame(self.screen, text="Admin", command=lambda:Admin(self.screen), font_size=36, relx=0.85, rely=0.80, relwidth=0.15, relheight=0.09)    
-
+        buttonFrame(self.screen, text="Sync", command=lambda:data_handler.retrieve_google_sheets(), font_size=36, relx=0.85, rely=0.90, relwidth=0.15, relheight=0.09)    
         # Set up barcode reading
         self.code = ''
         self.screen.bind('<Key>', self.get_key)
@@ -145,7 +145,6 @@ class MainScreen(Tk):
         elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
-            
             if is_root_window_in_front(self.screen):
                 close_children_windows(self.screen)
             if get_top_level_windows(self.screen) == 0:
