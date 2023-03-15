@@ -17,27 +17,6 @@ import pygame
 pygame.mixer.init()
 
 data_handler = data_handler()
-
-def LogSignIn(reason, args):
-    user = args["user"]
-    date, clock = get_date_and_clock()
-    student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-    # TODO Fix
-    # lateness.append_row(student_data)
-
-
-class Reason(Tk):
-    def __init__(self, user):
-
-        title = 'Enter your reason for lateness'
-        text = 'Please enter your reason for lateness'
-        wait = Tk()
-        keybd = Keyboard(wait, title, text)
-        # TODO DATA: Add to GSpread Queue
-        wait.iconify()
-        wait.wait_window(keybd.keyboard)
-        print(keybd.entry)
-        wait.destroy()
         
 # TODO NEW GUI: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
@@ -62,42 +41,60 @@ class LocationChoiceWindow(Tk):
                     ('Driving Off Campus', 'Driving'))
 
         # buttons
+        button_grid = [None] * len(locations)
         for i, place in enumerate(locations):
             if place[1] != "Walking" and place[1] != "Driving":
                 photo = PhotoImage(file = f"logos/{place[1]}.png")
-                r = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda:LogSignOut(place[1], self.user, "Walk", window))
-                r.image = photo
-                r.grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
+                button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda place=place:LogSignOut(place[0] , self.user, "Walk", window))
+                button_grid[i].image = photo
+                button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
-                r = Button(window, text=place[0], font=('Arial 24'), command=lambda:CustomLocation(self.user, window, place[1]))
+                r = Button(window, text=place[0], font=('Arial 24'), command=lambda place=place:CustomLocation(self.user, window, place[1]))
                 r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
 
 class CustomLocation(Tk):
     def __init__(self, user, window, transport):
+        if transport == "Driving" and data_handler.does_user_have_driving_note(user):
+            error_pop("The system's records does not currently have a driving permission note for you today.")
+            return
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
-        wait = Tk()
+        wait = Toplevel()
         keybd = Keyboard(wait, title, text)
-        # TODO DATA: Add to GSpread Queue
         wait.iconify()
         wait.wait_window(keybd.keyboard)
-        print(keybd.entry)
         wait.destroy()
+        window.destroy()
+        location = keybd.entry
+        # TODO: Fix this when the operation is canceled
+        LogSignOut(location, user, transport, window)
+        
+        
 
 def LogSignOut(location, user, transport, window):
-    # TODO: Fix this - this should be based on the transportation type (ie driving or not), not user type
-    if user["Type"] == "Student":
-        data_handler.log_student_sign_out(location, user, transport, window)
-        # Close Window
+    # Student users who are walking are not allowed to leave for the day
+    if transport == "Walk" and user["Type"] == "Student":
+        data_handler.log_student_sign_out(location, user, transport, False, window)
         window.destroy()
     else:
-        gone_for_day_check = Tk()
-        gone_for_day_check.geometry("700x180+450+450")
+        # Check if the user is leaving for the day or not
+        gone_for_day_check = Toplevel()
+        gone_for_day_check.grab_set()
+        gone_for_day_check.geometry("800x180+450+450")
         buttonframe = Frame(gone_for_day_check)
-        buttonframe.grid(row=2, column=0, columnspan=2)        
-        Label(gone_for_day_check, text="Are you leaving for the rest of the day?", font=('Helvetica 25 bold')).grid(row=0, column=0, padx=20, pady = 20)
-        Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-        Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(location, user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+        buttonframe.grid(row=2, column=0, columnspan=2)      
+        Label(gone_for_day_check, text=f"Are you leaving for the rest of the day, {user['Preferred Name']}?", font=('Helvetica 25 bold'), wraplength=800, justify=CENTER).grid(row=0, column=0, padx=20, pady = 20)
+    
+    
+        if user["Type"] == "Student":
+            Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            # Close Window
+            window.destroy()
+
+        else:
+            Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
 
 
 
@@ -131,12 +128,12 @@ class MainScreen(Tk):
         
         #Create Title Splash
         textFrame(self.screen, text="Germantown Academy Sign In Sign Out System", font_size=40, color = "black", relx=0.5, rely=0.68, relwidth= 1, relheight=0.1)
-        textFrame(self.screen, text="Please scan your key card.", font_size=70, color = "black", relx=0.45, rely=0.80, relwidth= 0.75, relheight=0.10)
+        textFrame(self.screen, text="Please scan your key card.", font_size=60, color = "black", relx=0.45, rely=0.80, relwidth= 0.75, relheight=0.10)
         textFrame(self.screen, text="An Advanced Topics in CS Project created by Sam Wang under the guidance of Mr. Oswald, Ms. Kennedy, and Mr. DiFranco", font_size=18, color = "blue", relx=0.5, rely=0.95, relwidth=0.88, relheight=0.04)
 
         # # Create buttons
         buttonFrame(self.screen, text="Admin", command=lambda:Admin(self.screen), font_size=36, relx=0.85, rely=0.80, relwidth=0.15, relheight=0.09)    
-
+        buttonFrame(self.screen, text="Sync", command=lambda:data_handler.retrieve_google_sheets(), font_size=36, relx=0.85, rely=0.90, relwidth=0.15, relheight=0.09)    
         # Set up barcode reading
         self.code = ''
         self.screen.bind('<Key>', self.get_key)
@@ -148,12 +145,14 @@ class MainScreen(Tk):
         elif event.keysym == 'Return' and self.state =="active":
             scan_id = int(self.code[-6:])
             print(scan_id)
-            process_barcode(scan_id)
-       
+            if is_root_window_in_front(self.screen):
+                close_children_windows(self.screen)
+            if get_top_level_windows(self.screen) == 0:
+                process_barcode(scan_id) 
 
 class OperationSelector(Tk):
     def __init__(self, user):
-        self.screen = Tk()
+        self.screen = Toplevel()
         self.screen.geometry('800x200+500+400')
         self.screen.resizable(False, False)
         self.screen.title('Select an Operation')
@@ -167,10 +166,13 @@ class OperationSelector(Tk):
         if operation == "Lateness":
             Lateness(self.user)
         elif operation == "Off Campus":
-            LocationChoiceWindow(self.user)
+            # Check to make sure that the operation is allowed
+            if data_handler.operation_allowed(self.user):
+                LocationChoiceWindow(self.user)
+
 
 def Lateness(user):
-    root = Tk()
+    root = Toplevel()
     keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
     root.iconify()
     root.wait_window(keybd.keyboard)
@@ -178,22 +180,34 @@ def Lateness(user):
         print(f"{user['First Name']} is late because {keybd.entry}")
     else:
         print("Operation Canceled")
+    root.destroy()
+
+def return_to_campus(user):
+    return_to_campus_check = Toplevel()
+    return_to_campus_check.grab_set()
+    return_to_campus_check.geometry("600x200+450+450")
+    buttonframe = Frame(return_to_campus_check)
+    buttonframe.grid(row=2, column=0, columnspan=2)      
+    Label(return_to_campus_check, text=f"Are you signing back in, {user['Preferred Name']}?", font=('Helvetica 25 bold'), wraplength=600, justify=CENTER).grid(row=0, column=0, padx=20, pady = 20)
+    Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.return_to_campus(user, return_to_campus_check)).grid(row= 1, column=0, padx= 10)
+    Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:return_to_campus_check.destroy()).grid(row= 1, column=2, padx= 10)
 
 
 
 def process_barcode(scan_id):
+    
     user_type = data_handler.user_type_from_barcode(scan_id)
     if user_type:
         user = data_handler.get_user_from_barcode(scan_id, user_type)
         user["type"] = user_type
-
-    selector = OperationSelector(user)
-    try:
-        selector.screen.grab_set()
-    except Exception:
-        # Prevent multiple operation screens from being created
-        print("grab error")
-        selector.screen.destroy()
+    if data_handler.is_user_currently_signed_out(scan_id, user_type):
+        return_to_campus(user)
+    else:        
+        if user_type == "Student":
+            selector = OperationSelector(user)
+            selector.screen.grab_set()
+        elif user_type == "Faculty":
+            LogSignOut(None, user, "Driving", None)
 
 def main():
     root = MainScreen()

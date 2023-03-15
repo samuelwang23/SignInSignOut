@@ -2,6 +2,7 @@ from tkinter import *
 from PIL import ImageTk, Image
 from datetime import datetime
 import pygame
+import inspect
 
 def get_date_and_clock():
     date = datetime.now().strftime('%Y-%m-%d')
@@ -55,9 +56,10 @@ def create_confirm_box(text, type):
     canvas.image = image
     return message
 
-def success_confirm(confirm_text, row_id):
+def success_confirm(confirm_text):
     confirmation = create_confirm_box(confirm_text, "complete")
-    #TODO: Fix the fact there is a data leak in the confirm box - this is a cancel operation - call from data handler?
+    operation_name = inspect.stack()[1][3]
+    print(operation_name)
     # Button(confirmation, text = "Cancel", font ='Helvetica 17 bold', command=lambda:fac_off_campus.delete_rows(row_id)).pack()
     confirmation.overrideredirect(True)
     confirmation.after(2000,lambda:confirmation.destroy())
@@ -71,4 +73,27 @@ def error_pop(error_text, audio=True, length=3000):
         pygame.mixer.music.set_volume(speaker_volume)
         pygame.mixer.music.load('output1.mp3')
         pygame.mixer.music.play()
-    
+
+def get_top_level_windows(root):
+    tops = [] 
+    for widget in root.winfo_children(): # Looping through widgets in main window
+        if '!toplevel' in str(widget): 
+            tops.append(widget)      
+    return len(tops)
+
+def get_day_of_week():
+    return datetime.now().weekday()
+
+def get_time_from_string(string):
+    return datetime.strptime(string,'%H:%M')
+
+def get_current_time():
+    return datetime.now()
+
+def is_root_window_in_front(root):
+    return root.tk.eval('wm stackorder '+str(root)).split(" ")[-1] == str(root)
+
+def close_children_windows(root):
+    for widget in root.winfo_children(): # Looping through widgets in main window
+        if '!toplevel' in str(widget): # If toplevel exists in the item
+            widget.destroy()
