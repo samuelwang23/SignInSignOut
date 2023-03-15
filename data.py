@@ -71,6 +71,7 @@ class data_handler:
         
 
     def retrieve_google_sheets(self):
+        print("Retrieving Google Sheets")
         self.IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
         self.students = self.IDList.worksheet("Student")
         self.student_users = pd.DataFrame(self.students.get_all_records()) 
@@ -149,7 +150,7 @@ class data_handler:
             allowed_days = json.loads(policies["Day of the Week"])
         else:
             allowed_days = [x for x in range(0, 7)]
-        #Temporary Dev Fix
+        #TODO Remove this - Temporary Dev Fix
         clock = get_time_from_string("12:15")
 
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])

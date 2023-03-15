@@ -13,6 +13,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from keyboard import Keyboard
 from utils import *
 from data import data_handler
+from time import sleep
 import pygame
 pygame.mixer.init()
 
@@ -213,7 +214,10 @@ def main():
     root = MainScreen()
     title_image = renderImage("GA.png", 1600, 600)
     imageFrame(root.screen, title_image, 0.5, 0.05, 0.8, 0.5)
+    rt = RepeatedTimer(900, data_handler.retrieve_google_sheets)
     root.screen.mainloop()
+    
 
 if __name__ == "__main__":
     main()
+    
