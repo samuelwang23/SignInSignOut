@@ -168,5 +168,4 @@ class data_handler:
             return True
     
     def does_user_have_driving_note(self, user):
-        date, clock = get_date_and_clock()
-        return self.driving_notes_df[(self.driving_notes_df["Date"] == date) & (self.driving_notes_df["Student ID"] == user["Person ID"])].shape[0] <= 0
+        return self.driving_notes_df[(self.driving_notes_df["Student ID"] == user["Person ID"])].shape[0] <= 0
