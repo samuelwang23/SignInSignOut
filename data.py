@@ -151,7 +151,7 @@ class data_handler:
         else:
             allowed_days = [x for x in range(0, 7)]
         #TODO Remove this - Temporary Dev Fix
-        clock = get_time_from_string("12:15")
+        # clock = get_time_from_string("12:15")
 
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])
         latest = get_time_from_string(policies["Latest Sign Out Time"])

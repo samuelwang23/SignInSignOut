@@ -102,7 +102,7 @@ def LogSignOut(location, user, transport, window):
 #Admin functions exit program
 #TODO Later add a setting in Keyboard for "Password mode"
 def Admin(root):
-    keybd = Keyboard(root, "Please Enter the Password", "Password")
+    keybd = Keyboard(root, "Please Enter the Password", "Password", obscured=True)
 
     #TODO DATA:Later Remove this password from the code itself somehow
     root.wait_window(keybd.keyboard)
