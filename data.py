@@ -14,6 +14,7 @@ gc = gspread.service_account(filename='myCredentials.json')
 class data_handler:
     def __init__(self):
         self.retrieve_google_sheets()
+
     def user_type_from_barcode(self, barcode):
         if barcode in self.student_ids:
             return "Student"
@@ -69,6 +70,16 @@ class data_handler:
         success_confirm(confirm_msg)
         window.destroy()
         
+    def sync_sheets(self):
+        print("Sync Sheets")
+        confirmation = create_confirm_box("Syncing data with server, please wait.", "sync")
+        confirmation.after(2000,lambda:confirmation.destroy())
+        self.IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
+        self.policy = self.IDList.worksheet("Policy")
+        self.policy_df = pd.DataFrame(self.policy.get_all_records()) 
+        records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
+        self.driving_notes = records.worksheet("Driving Note")
+        self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
 
     def retrieve_google_sheets(self):
         print("Retrieving Google Sheets")
@@ -150,7 +161,8 @@ class data_handler:
             allowed_days = json.loads(policies["Day of the Week"])
         else:
             allowed_days = [x for x in range(0, 7)]
-        #TODO Remove this - Temporary Dev Fix
+        
+        # Only uncomment for testing 
         # clock = get_time_from_string("12:15")
 
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])

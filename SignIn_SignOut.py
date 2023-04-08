@@ -19,7 +19,6 @@ pygame.mixer.init()
 
 data_handler = data_handler()
         
-# TODO NEW GUI: Make this accept a custom list of locations
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
         window = Toplevel()
@@ -67,8 +66,10 @@ class CustomLocation(Tk):
         wait.destroy()
         window.destroy()
         location = keybd.entry
-        # TODO: Fix this when the operation is canceled
-        LogSignOut(location, user, transport, window)
+        if location != "":
+            LogSignOut(location, user, transport, window)
+        else:
+            print("Operation Canceled")
         
         
 
@@ -100,11 +101,9 @@ def LogSignOut(location, user, transport, window):
 
 
 #Admin functions exit program
-#TODO Later add a setting in Keyboard for "Password mode"
 def Admin(root):
     keybd = Keyboard(root, "Please Enter the Password", "Password", obscured=True)
 
-    #TODO DATA:Later Remove this password from the code itself somehow
     root.wait_window(keybd.keyboard)
     if keybd.entry == "patriot":
         root.quit()
@@ -134,7 +133,7 @@ class MainScreen(Tk):
 
         # # Create buttons
         buttonFrame(self.screen, text="Admin", command=lambda:Admin(self.screen), font_size=36, relx=0.85, rely=0.80, relwidth=0.15, relheight=0.09)    
-        buttonFrame(self.screen, text="Sync", command=lambda:data_handler.retrieve_google_sheets(), font_size=36, relx=0.85, rely=0.90, relwidth=0.15, relheight=0.09)    
+        buttonFrame(self.screen, text="Sync", command=lambda:data_handler.sync_sheets(), font_size=36, relx=0.85, rely=0.90, relwidth=0.15, relheight=0.09)    
         # Set up barcode reading
         self.code = ''
         self.screen.bind('<Key>', self.get_key)
@@ -214,7 +213,7 @@ def main():
     root = MainScreen()
     title_image = renderImage("GA.png", 1600, 600)
     imageFrame(root.screen, title_image, 0.5, 0.05, 0.8, 0.5)
-    rt = RepeatedTimer(900, data_handler.retrieve_google_sheets)
+    rt = RepeatedTimer(900, data_handler.sync_sheets)
     root.screen.mainloop()
     
 

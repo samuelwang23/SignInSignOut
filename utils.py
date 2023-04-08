@@ -46,14 +46,13 @@ def buttonFrame(window, text, command, font_size, relx, rely, relheight, relwidt
 def create_confirm_box(text, type):
     message = Toplevel()
     message.geometry("500x400+700+300")
+    global image
+    image = ImageTk.PhotoImage(file = f'{type}.png')
     label = Label(message, text=text, font=('Helvetica 20 bold'))
     label.pack()
     label.bind('<Configure>', lambda e: label.config(wraplength=label.winfo_width() + 10))
-    image = ImageTk.PhotoImage(file = f'{type}.png')
-    canvas = Canvas(message, width = 300, height = 200)
-    canvas.pack(expand = YES, fill = BOTH)
-    canvas.create_image(250, 170, image = image, anchor = CENTER)
-    canvas.image = image
+    image_label = Label(message, image=image)
+    image_label.pack()
     return message
 
 def success_confirm(confirm_text):
