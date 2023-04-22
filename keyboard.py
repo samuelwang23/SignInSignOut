@@ -87,7 +87,10 @@ class Keyboard(Tk):
             new_text = i[:-2]
             self.textarea.delete(1.0, END)
             self.textarea.insert(INSERT, new_text)
+            i = self.obscurant.get(1.0, END)
+            new_text = i[:-2]
             self.obscurant.delete(1.0, END)
+            self.obscurant.insert(INSERT, new_text)
 
         elif value == 'Shift' or value == 'Lowercase':
             self.shiftKeys()
