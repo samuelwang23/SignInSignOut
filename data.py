@@ -50,7 +50,6 @@ class data_handler:
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent"]
         self.off_campus_entry = pd.concat([self.off_campus_entry, pd.DataFrame([student_data], columns=self.off_campus_entry.columns)], axis = 0, ignore_index = True)
         self.off_campus.append_row(student_data)
-        print(self.off_campus_entry)
         success_confirm(confirm_msg)
         window.destroy()
 
@@ -65,8 +64,8 @@ class data_handler:
         else:
             time_back = ""
 
-        faculty_data = [[date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]]
-        self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.DataFrame(faculty_data, columns=self.fac_off_campus_entry.columns)], axis=0, ignore_index=True)
+        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]
+        self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.DataFrame([faculty_data], columns=self.fac_off_campus_entry.columns)], axis=0, ignore_index=True)
         self.fac_off_campus.append_row(faculty_data)           
         success_confirm(confirm_msg)
         window.destroy()
@@ -145,9 +144,7 @@ class data_handler:
         num_columns = len(logs.columns)
         gspread.update_cell(index+2, num_columns, "Present")
         gspread.update_cell(index+2, num_columns-1, clock)
-        print(logs)
         logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"
-        print(logs)
         window.destroy()
     
     def get_user_policies(self, user):

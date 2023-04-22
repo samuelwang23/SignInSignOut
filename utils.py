@@ -77,7 +77,7 @@ def get_top_level_windows(root):
     tops = [] 
     for widget in root.winfo_children(): # Looping through widgets in main window
         if '!toplevel' in str(widget): 
-            tops.append(widget)      
+            tops.append(widget)
     return len(tops)
 
 def get_day_of_week():
@@ -93,8 +93,9 @@ def is_root_window_in_front(root):
     return root.tk.eval('wm stackorder '+str(root)).split(" ")[-1] == str(root)
 
 def close_children_windows(root):
-    for widget in root.winfo_children(): # Looping through widgets in main window
+   for widget in root.winfo_children(): # Looping through widgets in main window
         if '!toplevel' in str(widget): # If toplevel exists in the item
+            print("destroying widget")
             widget.destroy()
 
 # Threaded Timer (Credit: https://stackoverflow.com/a/38317060)

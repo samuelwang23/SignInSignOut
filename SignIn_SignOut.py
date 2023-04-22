@@ -18,7 +18,8 @@ import pygame
 pygame.mixer.init()
 
 data_handler = data_handler()
-        
+rt = RepeatedTimer(30, data_handler.sync_sheets)
+
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
         window = Toplevel()
@@ -59,11 +60,8 @@ class CustomLocation(Tk):
             return
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
-        wait = Toplevel()
-        keybd = Keyboard(wait, title, text)
-        wait.iconify()
-        wait.wait_window(keybd.keyboard)
-        wait.destroy()
+        keybd = Keyboard(window, title, text)
+        window.wait_window(keybd.keyboard)
         window.destroy()
         location = keybd.entry
         if location != "":
@@ -106,7 +104,8 @@ def Admin(root):
 
     root.wait_window(keybd.keyboard)
     if keybd.entry == "patriot":
-        root.quit()
+        rt.stop()
+        root.destroy()
     else:
         error_pop("Incorrect Password")    
         
@@ -137,12 +136,11 @@ class MainScreen(Tk):
         # Set up barcode reading
         self.code = ''
         self.screen.bind('<Key>', self.get_key)
-        self.state = "active"
 
     def get_key(self, event):
-        if event.char in '0123456789' and self.state =="active":
+        if event.char in '0123456789':
             self.code += event.char
-        elif event.keysym == 'Return' and self.state =="active":
+        elif event.keysym == 'Return':
             scan_id = int(self.code[-6:])
             print(scan_id)
             if is_root_window_in_front(self.screen):
@@ -184,7 +182,6 @@ def Lateness(user):
 
 def return_to_campus(user):
     return_to_campus_check = Toplevel()
-    return_to_campus_check.grab_set()
     return_to_campus_check.geometry("600x200+450+450")
     buttonframe = Frame(return_to_campus_check)
     buttonframe.grid(row=2, column=0, columnspan=2)      
@@ -205,7 +202,6 @@ def process_barcode(scan_id):
     else:        
         if user_type == "Student":
             selector = OperationSelector(user)
-            selector.screen.grab_set()
         elif user_type == "Faculty":
             LogSignOut(None, user, "Driving", None)
 
@@ -213,7 +209,6 @@ def main():
     root = MainScreen()
     title_image = renderImage("GA.png", 1600, 600)
     imageFrame(root.screen, title_image, 0.5, 0.05, 0.8, 0.5)
-    # rt = RepeatedTimer(900, data_handler.sync_sheets)
     root.screen.mainloop()
     
 
