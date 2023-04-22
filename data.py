@@ -34,7 +34,7 @@ class data_handler:
     def log_student_lateness(self, user, reason):
         date, clock = get_date_and_clock()
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], reason]
-        self.lateness_entry = pd.concat([self.lateness_entry, pd.Series(student_data, index=self.lateness_entry.columns).to_frame().T])
+        self.lateness_entry = pd.concat([self.lateness_entry, pd.DataFrame([student_data], columns=self.lateness_entry.columns)], axis = 0,  ignore_index = True)
         self.lateness.append_row(student_data)
 
     def log_student_sign_out(self, location, user, transport, gone_for_day, window):
@@ -48,8 +48,9 @@ class data_handler:
             time_back = ""
 
         student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent"]
-        self.off_campus_entry = pd.concat([self.off_campus_entry, pd.Series(student_data, index=self.off_campus_entry.columns).to_frame().T])
+        self.off_campus_entry = pd.concat([self.off_campus_entry, pd.DataFrame([student_data], columns=self.off_campus_entry.columns)], axis = 0, ignore_index = True)
         self.off_campus.append_row(student_data)
+        print(self.off_campus_entry)
         success_confirm(confirm_msg)
         window.destroy()
 
@@ -64,8 +65,8 @@ class data_handler:
         else:
             time_back = ""
 
-        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]
-        self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.Series(faculty_data, index=self.fac_off_campus_entry.columns).to_frame().T], axis=0, ignore_index=True)
+        faculty_data = [[date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]]
+        self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.DataFrame(faculty_data, columns=self.fac_off_campus_entry.columns)], axis=0, ignore_index=True)
         self.fac_off_campus.append_row(faculty_data)           
         success_confirm(confirm_msg)
         window.destroy()
@@ -73,7 +74,7 @@ class data_handler:
     def sync_sheets(self):
         print("Sync Sheets")
         confirmation = create_confirm_box("Syncing data with server, please wait.", "sync")
-        confirmation.after(2000,lambda:confirmation.destroy())
+        confirmation.after(200,lambda:confirmation.destroy())
         self.IDList = gc.open_by_url("https://docs.google.com/spreadsheets/d/1xgwMCl0X7d-AuKxmPgsLiRuQJ7eDUxKQyKmpTC7YvKk/")
         self.policy = self.IDList.worksheet("Policy")
         self.policy_df = pd.DataFrame(self.policy.get_all_records()) 
@@ -139,12 +140,14 @@ class data_handler:
         
         date, clock = get_date_and_clock()
         index = logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]].index[0]
-
+        print(index)
         #Time Back and Attendance Status are the second to last and last columns respectively
         num_columns = len(logs.columns)
         gspread.update_cell(index+2, num_columns, "Present")
         gspread.update_cell(index+2, num_columns-1, clock)
+        print(logs)
         logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"
+        print(logs)
         window.destroy()
     
     def get_user_policies(self, user):
@@ -163,7 +166,7 @@ class data_handler:
             allowed_days = [x for x in range(0, 7)]
         
         # Only uncomment for testing 
-        # clock = get_time_from_string("12:15")
+        clock = get_time_from_string("12:15")
 
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])
         latest = get_time_from_string(policies["Latest Sign Out Time"])
