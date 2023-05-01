@@ -78,6 +78,15 @@ class data_handler:
         self.policy = self.IDList.worksheet("Policy")
         self.policy_df = pd.DataFrame(self.policy.get_all_records()) 
         records = gc.open_by_url("https://docs.google.com/spreadsheets/d/1tWKMoprqwx6J9sQpf4Cd-NvbMtUd5p3_sYhiPz17pZQ")
+        self.lateness = records.worksheet("Lateness")
+        self.lateness_entry = pd.DataFrame(self.lateness.get_all_records())
+        self.off_campus = records.worksheet("Off Campus")
+        self.off_campus_entry = pd.DataFrame(self.off_campus.get_all_records())
+        self.fac_off_campus = records.worksheet("Faculty Off Campus")
+        self.fac_off_campus_entry = pd.DataFrame(self.fac_off_campus.get_all_records())
+
+        self.driving_notes = records.worksheet("Driving Note")
+        self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
         self.driving_notes = records.worksheet("Driving Note")
         self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
 
@@ -141,7 +150,7 @@ class data_handler:
         index = logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]].index[0]
         print(index)
         #Time Back and Attendance Status are the second to last and last columns respectively
-        num_columns = len(logs.columns)
+        num_columns = 6
         gspread.update_cell(index+2, num_columns, "Present")
         gspread.update_cell(index+2, num_columns-1, clock)
         logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"

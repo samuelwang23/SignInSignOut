@@ -79,7 +79,6 @@ def LogSignOut(location, user, transport, window):
     else:
         # Check if the user is leaving for the day or not
         gone_for_day_check = Toplevel()
-        gone_for_day_check.grab_set()
         gone_for_day_check.geometry("800x180+450+450")
         buttonframe = Frame(gone_for_day_check)
         buttonframe.grid(row=2, column=0, columnspan=2)      
@@ -160,25 +159,25 @@ class OperationSelector(Tk):
         buttonFrame(self.screen, text="Off Campus", command=lambda:self.dispatch_operation("Off Campus"), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
 
     def dispatch_operation(self, operation):
-        self.screen.destroy()
         if operation == "Lateness":
-            Lateness(self.user)
+            Lateness(self.user, self.screen)
         elif operation == "Off Campus":
+            self.screen.destroy()
             # Check to make sure that the operation is allowed
             if data_handler.operation_allowed(self.user):
                 LocationChoiceWindow(self.user)
 
 
-def Lateness(user):
-    root = Toplevel()
-    keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
-    root.iconify()
-    root.wait_window(keybd.keyboard)
+def Lateness(user, window):
+    keybd = Keyboard(window, "Reason for Lateness", "Please enter your reason for lateness")
+    window.wait_window(keybd.keyboard)
     if keybd.entry != "":
-        print(f"{user['First Name']} is late because {keybd.entry}")
+        print(f"{user['Preferred Name']} is late because {keybd.entry}")
+        data_handler.log_student_lateness(user, keybd.entry)
+        window.destroy()
     else:
         print("Operation Canceled")
-    root.destroy()
+    
 
 def return_to_campus(user):
     return_to_campus_check = Toplevel()
@@ -201,7 +200,8 @@ def process_barcode(scan_id):
         return_to_campus(user)
     else:        
         if user_type == "Student":
-            selector = OperationSelector(user)
+            error_pop("This program is currently in a Faculty-only Beta, but will be available for student use soon.")
+            # selector = OperationSelector(user)
         elif user_type == "Faculty":
             LogSignOut(None, user, "Driving", None)
 
