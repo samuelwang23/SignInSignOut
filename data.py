@@ -87,8 +87,6 @@ class data_handler:
 
         self.driving_notes = records.worksheet("Driving Note")
         self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
-        self.driving_notes = records.worksheet("Driving Note")
-        self.driving_notes_df = pd.DataFrame(self.driving_notes.get_all_records())
 
     def retrieve_google_sheets(self):
         print("Retrieving Google Sheets")
@@ -127,6 +125,7 @@ class data_handler:
             logs = self.fac_off_campus_entry
         else:
             print("Improper User Type given")
+            error_pop("Invalid User ID, please see Ms. Kennedy")
         currently_signed_out_ids = logs[logs["Attendance Status"] == "Absent"]["ID"]
         if user_id in currently_signed_out_ids.values:
             print("User is off campus")
@@ -190,4 +189,20 @@ class data_handler:
             return True
     
     def does_user_have_driving_note(self, user):
-        return self.driving_notes_df[(self.driving_notes_df["Student ID"] == user["Person ID"])].shape[0] <= 0
+        clock = get_current_time()
+        drivers_notes = self.driving_notes_df[(self.driving_notes_df["Student ID"] == user["Person ID"])]
+        print("here")
+        if drivers_notes.shape[0] > 0:
+            print("there is some form of note")
+            print(get_time_from_string(drivers_notes.iloc[0]["Start Time"]))
+            if get_time_from_string(drivers_notes.iloc[0]["Start Time"]).time() < clock.time():
+                print("This is true")
+                return True
+            else:
+                print("Didn't start")
+                error_pop(f"Your driver's note does not start until {drivers_notes.iloc[0]['Start Time']}")
+                return False
+        error_pop("The system's records does not currently have a driving permission note for you today.")
+        print("no note at all")
+        return False
+        

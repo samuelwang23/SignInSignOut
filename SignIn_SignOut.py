@@ -39,7 +39,7 @@ class LocationChoiceWindow(Tk):
                     ('Little Italy', 'Little Italy'),
                     ('Zakes Cafe', 'Zakes Cafe'),
                     ('Walking Somewhere else', 'Walking'),
-                    ('Driving Off Campus', 'Driving'))
+                    ('Being Driven / Driving Off Campus', 'Driving'))
 
         # buttons
         button_grid = [None] * len(locations)
@@ -49,14 +49,18 @@ class LocationChoiceWindow(Tk):
                 button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda place=place:LogSignOut(place[0] , self.user, "Walk", window))
                 button_grid[i].image = photo
                 button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
+            elif place[1] == "Walking":
+                photo = PhotoImage(file = f"logos/{place[1]}.png")
+                button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda place=place:CustomLocation(self.user, window, place[1]))
+                button_grid[i].image = photo
+                button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
                 r = Button(window, text=place[0], font=('Arial 24'), command=lambda place=place:CustomLocation(self.user, window, place[1]))
-                r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
+                r.grid(row=4, column = 0, columnspan= 6, padx = 10)
 
 class CustomLocation(Tk):
     def __init__(self, user, window, transport):
-        if transport == "Driving" and data_handler.does_user_have_driving_note(user):
-            error_pop("The system's records does not currently have a driving permission note for you today.")
+        if transport == "Driving" and not data_handler.does_user_have_driving_note(user):
             return
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
@@ -200,8 +204,8 @@ def process_barcode(scan_id):
         return_to_campus(user)
     else:        
         if user_type == "Student":
-            error_pop("This program is currently in a Faculty-only Beta, but will be available for student use soon.")
-            # selector = OperationSelector(user)
+            # error_pop("This program is currently in a Faculty-only Beta, but will be available for student use soon.")
+            selector = OperationSelector(user)
         elif user_type == "Faculty":
             LogSignOut(None, user, "Driving", None)
 
