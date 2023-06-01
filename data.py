@@ -46,12 +46,14 @@ class data_handler:
             confirm_msg += " for the rest of the day"
         else:
             time_back = ""
-
-        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent", etr]
-        self.off_campus_entry = pd.concat([self.off_campus_entry, pd.DataFrame([student_data], columns=self.off_campus_entry.columns)], axis = 0, ignore_index = True)
-        self.off_campus.append_row(student_data)
-        success_confirm(confirm_msg)
-        window.destroy()
+        
+        # This is needed to make sure that students with a drivers note can only drive off campus if their grade is not allowed to sign out during the current time
+        if transport == "Driving" or self.operation_allowed(user):
+            student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent", etr]
+            self.off_campus_entry = pd.concat([self.off_campus_entry, pd.DataFrame([student_data], columns=self.off_campus_entry.columns)], axis = 0, ignore_index = True)
+            self.off_campus.append_row(student_data)
+            success_confirm(confirm_msg)
+            window.destroy()
 
     def log_faculty_sign_out(self, user, gone_for_day, window, etr="N/A") :
         date, clock = get_date_and_clock()
@@ -171,7 +173,7 @@ class data_handler:
             allowed_days = [x for x in range(0, 7)]
         
         # Only uncomment for testing 
-        clock = get_time_from_string("12:15")
+        # clock = get_time_from_string("12:15")
 
         earliest = get_time_from_string(policies["Earliest Sign Out Time"])
         latest = get_time_from_string(policies["Latest Sign Out Time"])
@@ -188,7 +190,7 @@ class data_handler:
         else:
             return True
     
-    def does_user_have_driving_note(self, user):
+    def does_user_have_driving_note(self, user, quiet=False):
         clock = get_current_time()
         drivers_notes = self.driving_notes_df[(self.driving_notes_df["Student ID"] == user["Person ID"])]
         if drivers_notes.shape[0] > 0:
@@ -198,7 +200,9 @@ class data_handler:
             else:
                 error_pop(f"Your driver's note does not start until {drivers_notes.iloc[0]['Start Time']}")
                 return False
-        error_pop("The system's records does not currently have a driving permission note for you today.")
+        # Sometimes this error message should not be displayed as it is overidden by a different error
+        if not quiet:
+            error_pop("The system's records does not currently have a driving permission note for you today.")
         print("no note at all")
         return False
         

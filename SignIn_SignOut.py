@@ -183,7 +183,7 @@ class OperationSelector(Tk):
         elif operation == "Off Campus":
             self.screen.destroy()
             # Check to make sure that the operation is allowed
-            if data_handler.operation_allowed(self.user):
+            if data_handler.does_user_have_driving_note(self.user, quiet=True) or data_handler.operation_allowed(self.user):
                 LocationChoiceWindow(self.user)
 
 class ReturnSelector(Tk):
