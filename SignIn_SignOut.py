@@ -15,7 +15,9 @@ from utils import *
 from data import data_handler
 from time import sleep
 import pygame
+import datetime
 pygame.mixer.init()
+
 
 data_handler = data_handler()
 rt = RepeatedTimer(30, data_handler.sync_sheets)
@@ -192,20 +194,36 @@ class ReturnSelector(Tk):
         self.screen.title('Select an estimated return time')
         self.screen.resizable(False, False)
         self.screen.protocol("WM_DELETE_WINDOW", disable_event)
-        colon = Label(self.screen, text="What will your estimated time of return be?")
-        colon.config(font=(f'Helvetica {30} bold'), fg="black", wraplength=500)
-        colon.pack()
+        title = Label(self.screen, text="What will your estimated time of return be?")
+        title.config(font=(f'Helvetica {30} bold'), fg="black", wraplength=500)
+        title.pack()
+
+        preset_label = Label(self.screen, text="Choose a preset")
+        preset_label.config(font=(f'Helvetica {20} bold'), fg="blue", wraplength=500)
+        preset_label.pack(pady=(50, 20))
+        self.presets = [15, 30, 50]
+        self.preset_btns = []
+        for preset in self.presets:
+            print(preset, type(preset))
+            btn = Button(self.screen, text = f"Back in {preset} minutes", font = f'Helvetica {20} bold', command=lambda preset=preset:self.select_preset(preset))
+            btn.pack()
+            self.preset_btns.append(btn)
+
 
         self.hour_options = [hour for hour in range(8, 15)]
         self.minute_options = [x * 5 for x in range(0, 12)]
+        manual_label = Label(self.screen, text="Or manually select a time")
+        manual_label.config(font=(f'Helvetica {20} bold'), fg="blue", wraplength=500)
+        manual_label.pack(pady=(50, 20))
         self.hour_selector = create_selector(self.screen, self.hour_options, 50, LEFT)
         self.minute_selector = create_selector(self.screen, self.minute_options, 30, RIGHT)
 
         colon = Label(self.screen, text=":")
         colon.config(font=(f'Helvetica {200} bold'), fg="black")
         colon.pack()
-        btn1 = Button(self.screen, text = "Set time", font = f'Helvetica {14} bold', command=self.get_selected_times)
-        btn1.pack()
+        set_time_btn = Button(self.screen, text = "Set time", font = f'Helvetica {20} bold', command=self.get_selected_times)
+        set_time_btn.pack()
+        
         self.error = Label(self.screen, text="Please select both an hour and minute value for your time.", wraplength=350)
         self.error.config(font=(f'Helvetica {20} bold'), fg="red")
         colon.focus_set()
@@ -221,6 +239,11 @@ class ReturnSelector(Tk):
             self.error.pack_forget()
             self.time = f"{self.hour_options[hour_select[0]]}:{self.minute_options[minute_select[0]]}"
             self.screen.destroy()
+    
+    def select_preset(self, time):
+        self.time = get_current_time() + datetime.timedelta(minutes=int(time))
+        self.time = self.time.strftime("%H:%M")
+        self.screen.destroy()
             
 
 
