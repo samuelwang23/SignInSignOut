@@ -39,7 +39,7 @@ class LocationChoiceWindow(Tk):
                     ('Little Italy', 'Little Italy'),
                     ('Zakes Cafe', 'Zakes Cafe'),
                     ('Walking Somewhere else', 'Walking'),
-                    ('Being Driven / Driving Off Campus', 'Driving'))
+                    ('Riding a car/driving off campus', 'Driving'))
 
         # buttons
         button_grid = [None] * len(locations)
