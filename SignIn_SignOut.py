@@ -91,15 +91,28 @@ def LogSignOut(location, user, transport, window):
     
         if user["Type"] == "Student":
             Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            # Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:get_eta(user, transport, gone_for_day_check, location)).grid(row= 1, column=2, padx= 10)
             # Close Window
             window.destroy()
 
         else:
             Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:get_eta(user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
 
-
+def get_eta(user, transport, window, location=None):
+    
+    test = ReturnSelector()
+    window.wait_window(test.screen)
+    if test.time != "":
+        if user["Type"] == "Student":
+            data_handler.log_student_sign_out(location, user, transport, False, window, test.time)        
+        else:
+            data_handler.log_faculty_sign_out(user, False, window, test.time)
+        window.destroy()
+    else:
+        print("Canceled")
+        
 
 #Admin functions exit program
 def Admin(root):
@@ -155,8 +168,10 @@ class OperationSelector(Tk):
     def __init__(self, user):
         self.screen = Toplevel()
         self.screen.geometry('800x200+500+400')
-        self.screen.resizable(False, False)
+        
         self.screen.title('Select an Operation')
+        self.screen.resizable(False, False)
+        self.screen.protocol("WM_DELETE_WINDOW", disable_event)
         self.user = user
         textFrame(self.screen, text="Select an Operation", font_size=22, color = "black", relx=0.5, rely=0.2, relwidth=0.88, relheight=0.2)
         buttonFrame(self.screen, text="Lateness", command=lambda:self.dispatch_operation("Lateness"), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
@@ -170,6 +185,43 @@ class OperationSelector(Tk):
             # Check to make sure that the operation is allowed
             if data_handler.operation_allowed(self.user):
                 LocationChoiceWindow(self.user)
+
+class ReturnSelector(Tk):
+    def __init__(self):
+        self.screen = Toplevel()
+        self.screen.title('Select an estimated return time')
+        self.screen.resizable(False, False)
+        self.screen.protocol("WM_DELETE_WINDOW", disable_event)
+        colon = Label(self.screen, text="What will your estimated time of return be?")
+        colon.config(font=(f'Helvetica {30} bold'), fg="black", wraplength=500)
+        colon.pack()
+
+        self.hour_options = [hour for hour in range(8, 15)]
+        self.minute_options = [x * 5 for x in range(0, 12)]
+        self.hour_selector = create_selector(self.screen, self.hour_options, 50, LEFT)
+        self.minute_selector = create_selector(self.screen, self.minute_options, 30, RIGHT)
+
+        colon = Label(self.screen, text=":")
+        colon.config(font=(f'Helvetica {200} bold'), fg="black")
+        colon.pack()
+        btn1 = Button(self.screen, text = "Set time", font = f'Helvetica {14} bold', command=self.get_selected_times)
+        btn1.pack()
+        self.error = Label(self.screen, text="Please select both an hour and minute value for your time.", wraplength=350)
+        self.error.config(font=(f'Helvetica {20} bold'), fg="red")
+        colon.focus_set()
+        self.time = None
+
+    def get_selected_times(self):
+        hour_select = self.hour_selector.curselection()
+        minute_select = self.minute_selector.curselection()
+        if len(hour_select) != 1 or len(minute_select) != 1:
+            self.error.pack()
+            self.time = None
+        else:
+            self.error.pack_forget()
+            self.time = f"{self.hour_options[hour_select[0]]}:{self.minute_options[minute_select[0]]}"
+            self.screen.destroy()
+            
 
 
 def Lateness(user, window):

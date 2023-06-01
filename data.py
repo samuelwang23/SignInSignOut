@@ -37,7 +37,7 @@ class data_handler:
         self.lateness_entry = pd.concat([self.lateness_entry, pd.DataFrame([student_data], columns=self.lateness_entry.columns)], axis = 0,  ignore_index = True)
         self.lateness.append_row(student_data)
 
-    def log_student_sign_out(self, location, user, transport, gone_for_day, window):
+    def log_student_sign_out(self, location, user, transport, gone_for_day, window, etr="N/A"):
         date, clock = get_date_and_clock()
         confirm_msg = f"{user['Preferred Name']} is signing out to {location}"
 
@@ -47,13 +47,13 @@ class data_handler:
         else:
             time_back = ""
 
-        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent"]
+        student_data = [date, clock, user['Preferred Name'], user['Last Name'], user['Current Grade'], int(user['Person ID']), user['House'], user['Advisor'], location, transport, time_back, "Absent", etr]
         self.off_campus_entry = pd.concat([self.off_campus_entry, pd.DataFrame([student_data], columns=self.off_campus_entry.columns)], axis = 0, ignore_index = True)
         self.off_campus.append_row(student_data)
         success_confirm(confirm_msg)
         window.destroy()
 
-    def log_faculty_sign_out(self, user, gone_for_day, window) :
+    def log_faculty_sign_out(self, user, gone_for_day, window, etr="N/A") :
         date, clock = get_date_and_clock()
         
         confirm_msg = f"{user['Preferred Name']} is signing out"
@@ -64,7 +64,7 @@ class data_handler:
         else:
             time_back = ""
 
-        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent"]
+        faculty_data = [date, clock, user['Full Name'], int(user['Person ID']), time_back, "Absent", etr]
         self.fac_off_campus_entry = pd.concat([self.fac_off_campus_entry, pd.DataFrame([faculty_data], columns=self.fac_off_campus_entry.columns)], axis=0, ignore_index=True)
         self.fac_off_campus.append_row(faculty_data)           
         success_confirm(confirm_msg)
@@ -149,9 +149,9 @@ class data_handler:
         index = logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]].index[0]
         print(index)
         #Time Back and Attendance Status are the second to last and last columns respectively
-        num_columns = 6
-        gspread.update_cell(index+2, num_columns, "Present")
-        gspread.update_cell(index+2, num_columns-1, clock)
+        num_columns = logs.shape[1]
+        gspread.update_cell(index+2, num_columns-1, "Present")
+        gspread.update_cell(index+2, num_columns-2, clock)
         logs.loc[(logs["Attendance Status"] == "Absent") & (logs["ID"] == user["Person ID"]), ["Time Back", "Attendance Status"]] = clock, "Present"
         window.destroy()
     
@@ -191,15 +191,11 @@ class data_handler:
     def does_user_have_driving_note(self, user):
         clock = get_current_time()
         drivers_notes = self.driving_notes_df[(self.driving_notes_df["Student ID"] == user["Person ID"])]
-        print("here")
         if drivers_notes.shape[0] > 0:
-            print("there is some form of note")
             print(get_time_from_string(drivers_notes.iloc[0]["Start Time"]))
             if get_time_from_string(drivers_notes.iloc[0]["Start Time"]).time() < clock.time():
-                print("This is true")
                 return True
             else:
-                print("Didn't start")
                 error_pop(f"Your driver's note does not start until {drivers_notes.iloc[0]['Start Time']}")
                 return False
         error_pop("The system's records does not currently have a driving permission note for you today.")
