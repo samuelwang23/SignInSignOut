@@ -15,10 +15,12 @@ from utils import *
 from data import data_handler
 from time import sleep
 import pygame
+import datetime
 pygame.mixer.init()
 
+
 data_handler = data_handler()
-rt = RepeatedTimer(30, data_handler.sync_sheets)
+rt = RepeatedTimer(60, data_handler.sync_sheets)
 
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
@@ -39,7 +41,7 @@ class LocationChoiceWindow(Tk):
                     ('Little Italy', 'Little Italy'),
                     ('Zakes Cafe', 'Zakes Cafe'),
                     ('Walking Somewhere else', 'Walking'),
-                    ('Driving Off Campus', 'Driving'))
+                    ('Riding a car/driving off campus', 'Driving'))
 
         # buttons
         button_grid = [None] * len(locations)
@@ -49,14 +51,18 @@ class LocationChoiceWindow(Tk):
                 button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda place=place:LogSignOut(place[0] , self.user, "Walk", window))
                 button_grid[i].image = photo
                 button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
+            elif place[1] == "Walking":
+                photo = PhotoImage(file = f"logos/{place[1]}.png")
+                button_grid[i] = Button(window, text = place[0], image = photo, width=200, height=200, command=lambda place=place:CustomLocation(self.user, window, place[1]))
+                button_grid[i].image = photo
+                button_grid[i].grid(row=i//3+1, column=(i%3)*2, pady = 10, columnspan=2)
             else:
                 r = Button(window, text=place[0], font=('Arial 24'), command=lambda place=place:CustomLocation(self.user, window, place[1]))
-                r.grid(row=4, column = i%2*3, columnspan=3, padx = 10)
+                r.grid(row=4, column = 0, columnspan= 6, padx = 10)
 
 class CustomLocation(Tk):
     def __init__(self, user, window, transport):
-        if transport == "Driving" and data_handler.does_user_have_driving_note(user):
-            error_pop("The system's records does not currently have a driving permission note for you today.")
+        if transport == "Driving" and not data_handler.does_user_have_driving_note(user):
             return
         title = 'Enter your destination'
         text = 'Please enter where you are going:'
@@ -79,7 +85,6 @@ def LogSignOut(location, user, transport, window):
     else:
         # Check if the user is leaving for the day or not
         gone_for_day_check = Toplevel()
-        gone_for_day_check.grab_set()
         gone_for_day_check.geometry("800x180+450+450")
         buttonframe = Frame(gone_for_day_check)
         buttonframe.grid(row=2, column=0, columnspan=2)      
@@ -88,15 +93,28 @@ def LogSignOut(location, user, transport, window):
     
         if user["Type"] == "Student":
             Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            # Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_student_sign_out(location, user, transport, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:get_eta(user, transport, gone_for_day_check, location)).grid(row= 1, column=2, padx= 10)
             # Close Window
             window.destroy()
 
         else:
             Button(buttonframe, text ="Yes", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, True, gone_for_day_check)).grid(row= 1, column=0, padx= 10)
-            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:data_handler.log_faculty_sign_out(user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
+            Button(buttonframe, text = "No", font ='Helvetica 30 bold', command=lambda:get_eta(user, False, gone_for_day_check)).grid(row= 1, column=2, padx= 10)
 
-
+def get_eta(user, transport, window, location=None):
+    
+    test = ReturnSelector()
+    window.wait_window(test.screen)
+    if test.time != "":
+        if user["Type"] == "Student":
+            data_handler.log_student_sign_out(location, user, transport, False, window, test.time)        
+        else:
+            data_handler.log_faculty_sign_out(user, False, window, test.time)
+        window.destroy()
+    else:
+        print("Canceled")
+        
 
 #Admin functions exit program
 def Admin(root):
@@ -152,33 +170,93 @@ class OperationSelector(Tk):
     def __init__(self, user):
         self.screen = Toplevel()
         self.screen.geometry('800x200+500+400')
-        self.screen.resizable(False, False)
+        
         self.screen.title('Select an Operation')
+        self.screen.resizable(False, False)
+        self.screen.protocol("WM_DELETE_WINDOW", disable_event)
         self.user = user
         textFrame(self.screen, text="Select an Operation", font_size=22, color = "black", relx=0.5, rely=0.2, relwidth=0.88, relheight=0.2)
         buttonFrame(self.screen, text="Lateness", command=lambda:self.dispatch_operation("Lateness"), font_size=36, relx=0.25, rely=0.80, relwidth=0.30, relheight=0.50)    
         buttonFrame(self.screen, text="Off Campus", command=lambda:self.dispatch_operation("Off Campus"), font_size=36, relx=0.75, rely=0.80, relwidth=0.37, relheight=0.50)    
 
     def dispatch_operation(self, operation):
-        self.screen.destroy()
         if operation == "Lateness":
-            Lateness(self.user)
+            Lateness(self.user, self.screen)
         elif operation == "Off Campus":
+            self.screen.destroy()
             # Check to make sure that the operation is allowed
-            if data_handler.operation_allowed(self.user):
+            if data_handler.does_user_have_driving_note(self.user, quiet=True) or data_handler.operation_allowed(self.user):
                 LocationChoiceWindow(self.user)
 
+class ReturnSelector(Tk):
+    def __init__(self):
+        self.screen = Toplevel()
+        self.screen.title('Select an estimated return time')
+        self.screen.resizable(False, False)
+        self.screen.protocol("WM_DELETE_WINDOW", disable_event)
+        title = Label(self.screen, text="What will your estimated time of return be?")
+        title.config(font=(f'Helvetica {30} bold'), fg="black", wraplength=500)
+        title.pack()
 
-def Lateness(user):
-    root = Toplevel()
-    keybd = Keyboard(root, "Reason for Lateness", "Please enter your reason for lateness")
-    root.iconify()
-    root.wait_window(keybd.keyboard)
+        preset_label = Label(self.screen, text="Choose a preset")
+        preset_label.config(font=(f'Helvetica {20} bold'), fg="blue", wraplength=500)
+        preset_label.pack(pady=(50, 20))
+        self.presets = [15, 30, 50]
+        self.preset_btns = []
+        for preset in self.presets:
+            print(preset, type(preset))
+            btn = Button(self.screen, text = f"Back in {preset} minutes", font = f'Helvetica {20} bold', command=lambda preset=preset:self.select_preset(preset))
+            btn.pack()
+            self.preset_btns.append(btn)
+
+
+        self.hour_options = [hour for hour in range(8, 15)]
+        self.minute_options = [x * 5 for x in range(0, 12)]
+        manual_label = Label(self.screen, text="Or manually select a time")
+        manual_label.config(font=(f'Helvetica {20} bold'), fg="blue", wraplength=500)
+        manual_label.pack(pady=(50, 20))
+        self.hour_selector = create_selector(self.screen, self.hour_options, 50, LEFT)
+        self.minute_selector = create_selector(self.screen, self.minute_options, 30, RIGHT)
+
+        colon = Label(self.screen, text=":")
+        colon.config(font=(f'Helvetica {200} bold'), fg="black")
+        colon.pack()
+        set_time_btn = Button(self.screen, text = "Set time", font = f'Helvetica {20} bold', command=self.get_selected_times)
+        set_time_btn.pack()
+        
+        self.error = Label(self.screen, text="Please select both an hour and minute value for your time.", wraplength=350)
+        self.error.config(font=(f'Helvetica {20} bold'), fg="red")
+        colon.focus_set()
+        self.time = None
+
+    def get_selected_times(self):
+        hour_select = self.hour_selector.curselection()
+        minute_select = self.minute_selector.curselection()
+        if len(hour_select) != 1 or len(minute_select) != 1:
+            self.error.pack()
+            self.time = None
+        else:
+            self.error.pack_forget()
+            self.time = f"{self.hour_options[hour_select[0]]}:{self.minute_options[minute_select[0]]}"
+            self.screen.destroy()
+    
+    def select_preset(self, time):
+        self.time = get_current_time() + datetime.timedelta(minutes=int(time))
+        self.time = self.time.strftime("%H:%M")
+        self.screen.destroy()
+            
+
+
+def Lateness(user, window):
+    keybd = Keyboard(window, "Reason for Lateness", "Please enter your reason for lateness")
+    window.wait_window(keybd.keyboard)
     if keybd.entry != "":
-        print(f"{user['First Name']} is late because {keybd.entry}")
+        print(f"{user['Preferred Name']} is late because {keybd.entry}")
+        data_handler.log_student_lateness(user, keybd.entry)
+        window.destroy()
     else:
         print("Operation Canceled")
-    root.destroy()
+    
 
 def return_to_campus(user):
     return_to_campus_check = Toplevel()
@@ -201,6 +279,7 @@ def process_barcode(scan_id):
         return_to_campus(user)
     else:        
         if user_type == "Student":
+            # error_pop("This program is currently in a Faculty-only Beta, but will be available for student use soon.")
             selector = OperationSelector(user)
         elif user_type == "Faculty":
             LogSignOut(None, user, "Driving", None)

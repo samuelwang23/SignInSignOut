@@ -98,6 +98,17 @@ def close_children_windows(root):
             print("destroying widget")
             widget.destroy()
 
+def create_selector(window, options, font_size, side):
+    selector = Listbox(window, font=('Helvetica', font_size), width=2, height=5,  exportselection = False)
+    selector.pack(side = side, fill = BOTH, )
+    scrollbar = Scrollbar(window)
+    for option in options:
+        selector.insert(END, option)
+    selector.config(yscrollcommand = scrollbar.set)
+    scrollbar.config(command = selector.yview)
+    return selector
+
+
 # Threaded Timer (Credit: https://stackoverflow.com/a/38317060)
 from threading import Timer
 class RepeatedTimer(object):
