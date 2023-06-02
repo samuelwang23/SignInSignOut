@@ -44,8 +44,10 @@ class data_handler:
         if gone_for_day:
             time_back = "Gone For Day"
             confirm_msg += " for the rest of the day"
+            etr = "Tomorrow"
         else:
             time_back = ""
+            confirm_msg += f"and will be back around {etr}"
         
         # This is needed to make sure that students with a drivers note can only drive off campus if their grade is not allowed to sign out during the current time
         if transport == "Driving" or self.operation_allowed(user):

@@ -20,7 +20,7 @@ pygame.mixer.init()
 
 
 data_handler = data_handler()
-rt = RepeatedTimer(30, data_handler.sync_sheets)
+rt = RepeatedTimer(60, data_handler.sync_sheets)
 
 class LocationChoiceWindow(Tk):
     def __init__(self, user):
