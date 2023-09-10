@@ -9,6 +9,12 @@
 3. The program should run
 
 # Setting up a new device for the first time
+## Installing the OS onto the Raspberry PI 
+Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/). Select Raspberry Pi OS (32 Bit) for the operating system and for Storage select the SD card you plan to use.  Write the OS to the SD card and eject it safely.
+
+## Starting up the device 
+Insert the SD into the Raspberry Pi and plug it in. Pick your preferred settings language, keyboard, etc. Connect to a WiFi network in the setup window to install the packages for upcoming steps. 
+
 ## Connecting to the internet
 This program requires internet to function properly. To connect to the right network at the location this device is currently deployed at, the default network settings for Raspbian do not work. This can be fixed with the following process:
 1. Install network-manager by running `sudo apt install network-manager` in the terminal
@@ -19,7 +25,6 @@ This program requires internet to function properly. To connect to the right net
 6. When configuring the network, make sure that the authentication setting is set correctly for the network.
 ## Installing dependencies
 I used pip to install most of the dependencies for this project. They currently are:
-
     pandas
     gspread
     oauth2client
